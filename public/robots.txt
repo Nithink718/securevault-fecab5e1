@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /files
+Disallow: /notes
+Disallow: /categories
+Disallow: /favorites
+Disallow: /settings
+Disallow: /auth

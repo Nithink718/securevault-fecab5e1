@@ -1,0 +1,58 @@
+export type FileKind =
+  | "pdf"
+  | "word"
+  | "excel"
+  | "powerpoint"
+  | "image"
+  | "video"
+  | "audio"
+  | "archive"
+  | "text"
+  | "other";
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  passwordHash: string;
+  createdAt: number;
+}
+
+export interface FileMeta {
+  id: string;
+  userId: string;
+  fileName: string;
+  category: string;
+  size: number;
+  mime: string;
+  kind: FileKind;
+  favorite: boolean;
+  hidden: boolean;
+  locked: boolean;
+  uploadDate: number;
+  lastOpened?: number;
+}
+
+export interface Note {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  category: string;
+  color: string;
+  pinned: boolean;
+  favorite: boolean;
+  locked: boolean;
+  hidden: boolean;
+  createdDate: number;
+  updatedDate: number;
+  lastOpened?: number;
+}
+
+export interface Category {
+  id: string;
+  userId: string;
+  name: string;
+  type: "file" | "note";
+  builtIn?: boolean;
+}
