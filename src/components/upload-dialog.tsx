@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import {
   Dialog,
@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useShallow } from "zustand/react/shallow";
 import { useVault } from "@/lib/store";
 import { putBlob } from "@/lib/idb";
 import { defaultCategoryForKind, detectKind, formatSize } from "@/lib/file-utils";
@@ -29,11 +28,12 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [category, setCategory] = useState<string>("");
   const [dragging, setDragging] = useState(false);
 
-  const { categories, addFile } = useVault(
-    useShallow((s) => ({
-      categories: s.categories.filter((c) => c.userId === s.currentUserId && c.type === "file"),
-      addFile: s.addFile,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allCategories = useVault((s) => s.categories);
+  const addFile = useVault((s) => s.addFile);
+  const categories = useMemo(
+    () => allCategories.filter((c) => c.userId === currentUserId && c.type === "file"),
+    [allCategories, currentUserId],
   );
 
   useEffect(() => {

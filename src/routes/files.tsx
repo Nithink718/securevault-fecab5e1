@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import {
   Upload,
   MoreHorizontal,
@@ -55,14 +54,19 @@ export const Route = createFileRoute("/files")({
 type SortKey = "recent" | "name" | "size";
 
 function FilesPage() {
-  const { files, categories, updateFile, deleteFile, touchFile } = useVault(
-    useShallow((s) => ({
-      files: s.files.filter((f) => f.userId === s.currentUserId),
-      categories: s.categories.filter((c) => c.userId === s.currentUserId && c.type === "file"),
-      updateFile: s.updateFile,
-      deleteFile: s.deleteFile,
-      touchFile: s.touchFile,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allFiles = useVault((s) => s.files);
+  const allCategories = useVault((s) => s.categories);
+  const updateFile = useVault((s) => s.updateFile);
+  const deleteFile = useVault((s) => s.deleteFile);
+  const touchFile = useVault((s) => s.touchFile);
+  const files = useMemo(
+    () => allFiles.filter((f) => f.userId === currentUserId),
+    [allFiles, currentUserId],
+  );
+  const categories = useMemo(
+    () => allCategories.filter((c) => c.userId === currentUserId && c.type === "file"),
+    [allCategories, currentUserId],
   );
 
   const [query, setQuery] = useState("");

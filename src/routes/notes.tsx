@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import {
   Pencil,
   Pin,
@@ -42,13 +41,18 @@ export const Route = createFileRoute("/notes")({
 });
 
 function NotesPage() {
-  const { notes, categories, updateNote, deleteNote } = useVault(
-    useShallow((s) => ({
-      notes: s.notes.filter((n) => n.userId === s.currentUserId),
-      categories: s.categories.filter((c) => c.userId === s.currentUserId && c.type === "note"),
-      updateNote: s.updateNote,
-      deleteNote: s.deleteNote,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allNotes = useVault((s) => s.notes);
+  const allCategories = useVault((s) => s.categories);
+  const updateNote = useVault((s) => s.updateNote);
+  const deleteNote = useVault((s) => s.deleteNote);
+  const notes = useMemo(
+    () => allNotes.filter((n) => n.userId === currentUserId),
+    [allNotes, currentUserId],
+  );
+  const categories = useMemo(
+    () => allCategories.filter((c) => c.userId === currentUserId && c.type === "note"),
+    [allCategories, currentUserId],
   );
 
   const [query, setQuery] = useState("");
