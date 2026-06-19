@@ -94,7 +94,7 @@ function AuthPage() {
           </h2>
           <p className="text-white/80 text-pretty">
             Everything stays on your device. Organize documents, lock sensitive notes, and find anything in
-            seconds — without ever uploading to the cloud.
+            seconds.
           </p>
           <div className="grid grid-cols-3 gap-4 pt-4 text-sm">
             {[
