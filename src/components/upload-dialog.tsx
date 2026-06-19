@@ -72,7 +72,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload to vault</DialogTitle>
-          <DialogDescription>Files are saved to your device only — never uploaded to the cloud.</DialogDescription>
+          <DialogDescription>Files are saved to your device only</DialogDescription>
         </DialogHeader>
 
         <div
