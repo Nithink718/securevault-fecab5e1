@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useShallow } from "zustand/react/shallow";
+
 import { useVault } from "@/lib/store";
 import type { Note } from "@/lib/types";
 
@@ -32,12 +32,13 @@ export function NoteDialog({
   onOpenChange: (v: boolean) => void;
   note?: Note;
 }) {
-  const { categories, addNote, updateNote } = useVault(
-    useShallow((s) => ({
-      categories: s.categories.filter((c) => c.userId === s.currentUserId && c.type === "note"),
-      addNote: s.addNote,
-      updateNote: s.updateNote,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allCategories = useVault((s) => s.categories);
+  const addNote = useVault((s) => s.addNote);
+  const updateNote = useVault((s) => s.updateNote);
+  const categories = useMemo(
+    () => allCategories.filter((c) => c.userId === currentUserId && c.type === "note"),
+    [allCategories, currentUserId],
   );
 
   const [title, setTitle] = useState("");

@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -29,15 +28,24 @@ export const Route = createFileRoute("/categories")({
 });
 
 function CategoriesPage() {
-  const { categories, files, notes, addCategory, renameCategory, deleteCategory } = useVault(
-    useShallow((s) => ({
-      categories: s.categories.filter((c) => c.userId === s.currentUserId),
-      files: s.files.filter((f) => f.userId === s.currentUserId),
-      notes: s.notes.filter((n) => n.userId === s.currentUserId),
-      addCategory: s.addCategory,
-      renameCategory: s.renameCategory,
-      deleteCategory: s.deleteCategory,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allCategories = useVault((s) => s.categories);
+  const allFiles = useVault((s) => s.files);
+  const allNotes = useVault((s) => s.notes);
+  const addCategory = useVault((s) => s.addCategory);
+  const renameCategory = useVault((s) => s.renameCategory);
+  const deleteCategory = useVault((s) => s.deleteCategory);
+  const categories = useMemo(
+    () => allCategories.filter((c) => c.userId === currentUserId),
+    [allCategories, currentUserId],
+  );
+  const files = useMemo(
+    () => allFiles.filter((f) => f.userId === currentUserId),
+    [allFiles, currentUserId],
+  );
+  const notes = useMemo(
+    () => allNotes.filter((n) => n.userId === currentUserId),
+    [allNotes, currentUserId],
   );
 
   const [tab, setTab] = useState<"file" | "note">("file");

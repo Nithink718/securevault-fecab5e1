@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useShallow } from "zustand/react/shallow";
+import { useMemo } from "react";
 import { Heart, FileText, StickyNote } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { FileTypeIcon } from "@/components/file-type-icon";
@@ -12,11 +12,16 @@ export const Route = createFileRoute("/favorites")({
 });
 
 function FavoritesPage() {
-  const { files, notes } = useVault(
-    useShallow((s) => ({
-      files: s.files.filter((f) => f.userId === s.currentUserId && f.favorite && !f.hidden),
-      notes: s.notes.filter((n) => n.userId === s.currentUserId && n.favorite && !n.hidden),
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allFiles = useVault((s) => s.files);
+  const allNotes = useVault((s) => s.notes);
+  const files = useMemo(
+    () => allFiles.filter((f) => f.userId === currentUserId && f.favorite && !f.hidden),
+    [allFiles, currentUserId],
+  );
+  const notes = useMemo(
+    () => allNotes.filter((n) => n.userId === currentUserId && n.favorite && !n.hidden),
+    [allNotes, currentUserId],
   );
 
   return (

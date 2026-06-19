@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { Upload, Pencil, FileText, StickyNote, HardDrive, Heart, Lock, Clock } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { FileTypeIcon } from "@/components/file-type-icon";
@@ -19,11 +18,16 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const user = useCurrentUser();
-  const { files, notes } = useVault(
-    useShallow((s) => ({
-      files: s.files.filter((f) => f.userId === s.currentUserId && !f.hidden),
-      notes: s.notes.filter((n) => n.userId === s.currentUserId && !n.hidden),
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const allFiles = useVault((s) => s.files);
+  const allNotes = useVault((s) => s.notes);
+  const files = useMemo(
+    () => allFiles.filter((f) => f.userId === currentUserId && !f.hidden),
+    [allFiles, currentUserId],
+  );
+  const notes = useMemo(
+    () => allNotes.filter((n) => n.userId === currentUserId && !n.hidden),
+    [allNotes, currentUserId],
   );
   const [uploadOpen, setUploadOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);

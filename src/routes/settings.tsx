@@ -1,6 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
+import { useMemo, useRef, useState } from "react";
 import { Moon, Sun, Download, Upload, Trash2, ShieldCheck, Info } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -19,17 +18,18 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const router = useRouter();
   const user = useCurrentUser();
-  const { theme, setTheme, files, exportData, importData, wipeUserData, updateProfile, logout } = useVault(
-    useShallow((s) => ({
-      theme: s.theme,
-      setTheme: s.setTheme,
-      files: s.files.filter((f) => f.userId === s.currentUserId),
-      exportData: s.exportData,
-      importData: s.importData,
-      wipeUserData: s.wipeUserData,
-      updateProfile: s.updateProfile,
-      logout: s.logout,
-    })),
+  const currentUserId = useVault((s) => s.currentUserId);
+  const theme = useVault((s) => s.theme);
+  const setTheme = useVault((s) => s.setTheme);
+  const allFiles = useVault((s) => s.files);
+  const exportData = useVault((s) => s.exportData);
+  const importData = useVault((s) => s.importData);
+  const wipeUserData = useVault((s) => s.wipeUserData);
+  const updateProfile = useVault((s) => s.updateProfile);
+  const logout = useVault((s) => s.logout);
+  const files = useMemo(
+    () => allFiles.filter((f) => f.userId === currentUserId),
+    [allFiles, currentUserId],
   );
 
   const [username, setUsername] = useState(user?.username ?? "");
