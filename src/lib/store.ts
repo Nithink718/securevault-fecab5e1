@@ -51,6 +51,7 @@ interface VaultState {
   signup: (u: { username: string; email: string; password: string }) => { ok: true } | { ok: false; error: string };
   login: (email: string, password: string) => { ok: true } | { ok: false; error: string };
   logout: () => void;
+  ensureGuest: () => void;
   resetPassword: (email: string, newPassword: string) => { ok: true } | { ok: false; error: string };
   updateProfile: (patch: Partial<Pick<User, "username" | "email">>) => void;
 
