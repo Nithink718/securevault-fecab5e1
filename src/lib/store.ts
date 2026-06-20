@@ -122,6 +122,31 @@ export const useVault = create<VaultState>()(
 
       logout: () => set({ currentUserId: null }),
 
+      ensureGuest: () => {
+        if (get().currentUserId) return;
+        const existing = get().users.find((u) => u.email === "guest@local");
+        if (existing) {
+          set({ currentUserId: existing.id });
+          return;
+        }
+        const user: User = {
+          id: uid(),
+          username: "Guest",
+          email: "guest@local",
+          passwordHash: "",
+          createdAt: Date.now(),
+        };
+        const baseCats: Category[] = [
+          ...DEFAULT_FILE_CATS.map((n) => ({ id: uid(), userId: user.id, name: n, type: "file" as const, builtIn: true })),
+          ...DEFAULT_NOTE_CATS.map((n) => ({ id: uid(), userId: user.id, name: n, type: "note" as const, builtIn: true })),
+        ];
+        set((s) => ({
+          users: [...s.users, user],
+          currentUserId: user.id,
+          categories: [...s.categories, ...baseCats],
+        }));
+      },
+
       resetPassword: (email, newPassword) => {
         const e = email.trim().toLowerCase();
         const u = get().users.find((u) => u.email.toLowerCase() === e);
