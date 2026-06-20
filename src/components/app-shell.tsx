@@ -10,7 +10,6 @@ import {
   Shield,
   Search,
   Plus,
-  LogOut,
 } from "lucide-react";
 import { useCurrentUser, useVault } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ const NAV = [
 export function AppShell({ children, search, onSearchChange }: { children: ReactNode; search?: string; onSearchChange?: (v: string) => void }) {
   const user = useCurrentUser();
   const theme = useVault((s) => s.theme);
-  const logout = useVault((s) => s.logout);
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -37,7 +35,7 @@ export function AppShell({ children, search, onSearchChange }: { children: React
   }, [theme]);
 
   useEffect(() => {
-    if (user === null) router.navigate({ to: "/auth", replace: true });
+    if (user === null) router.navigate({ to: "/", replace: true });
   }, [user, router]);
 
   if (!user) {
@@ -92,23 +90,13 @@ export function AppShell({ children, search, onSearchChange }: { children: React
               <SettingsIcon className="size-4 shrink-0" />
               Settings
             </Link>
-            <button
-              onClick={() => {
-                logout();
-                router.navigate({ to: "/auth", replace: true });
-              }}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
-            >
-              <LogOut className="size-4 shrink-0" />
-              Sign out
-            </button>
             <div className="mt-3 flex items-center gap-3 rounded-lg bg-secondary/60 px-3 py-2">
               <div className="flex size-8 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
                 {user.username.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0">
                 <p className="truncate text-xs font-semibold">{user.username}</p>
-                <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+                <p className="truncate text-[11px] text-muted-foreground">Local vault</p>
               </div>
             </div>
           </div>

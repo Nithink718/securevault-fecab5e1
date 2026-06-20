@@ -10,11 +10,9 @@ export type FileKind =
   | "text"
   | "other";
 
-export interface User {
+export interface Profile {
   id: string;
   username: string;
-  email: string;
-  passwordHash: string;
   createdAt: number;
 }
 
