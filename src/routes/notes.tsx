@@ -30,10 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useVault } from "@/lib/store";
-import { estimateNotesSize } from "@/lib/file-utils";
-import { formatSize, timeAgo } from "@/lib/file-utils";
+import { timeAgo } from "@/lib/file-utils";
 import { NoteDialog } from "@/components/note-dialog";
-import { LockDialog } from "@/components/lock-dialog";
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
 
@@ -48,9 +46,6 @@ function NotesPage() {
   const allCategories = useVault((s) => s.categories);
   const updateNote = useVault((s) => s.updateNote);
   const deleteNote = useVault((s) => s.deleteNote);
-  const isUnlocked = useVault((s) => s.isUnlocked);
-  const markUnlocked = useVault((s) => s.markUnlocked);
-
   const notes = useMemo(
     () => allNotes.filter((n) => n.userId === currentUserId),
     [allNotes, currentUserId],
@@ -65,70 +60,17 @@ function NotesPage() {
   const [showHidden, setShowHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Note | undefined>(undefined);
-  const [lockState, setLockState] = useState<
-    | null
-    | { mode: "lock" | "unlock"; note: Note; after: (n: Note) => void }
-  >(null);
 
   const list = useMemo(() => {
     let arr = notes.filter((n) => (showHidden ? true : !n.hidden));
     if (cat !== "all") arr = arr.filter((n) => n.category === cat);
     if (query.trim()) {
       const q = query.toLowerCase();
-      arr = arr.filter(
-        (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q),
-      );
+      arr = arr.filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
     }
-    arr.sort(
-      (a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedDate - a.updatedDate,
-    );
+    arr.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedDate - a.updatedDate);
     return arr;
   }, [notes, cat, query, showHidden]);
-
-  const categoryStats = useMemo(() => {
-    if (cat === "all") return null;
-    const inCat = notes.filter((n) => n.category === cat && !n.hidden);
-    return { count: inCat.length, size: estimateNotesSize(inCat) };
-  }, [cat, notes]);
-
-  function openNote(n: Note) {
-    if (n.locked && !isUnlocked(n.id)) {
-      setLockState({
-        mode: "unlock",
-        note: n,
-        after: (note) => {
-          markUnlocked(note.id);
-          setEditing(note);
-          setOpen(true);
-        },
-      });
-      return;
-    }
-    setEditing(n);
-    setOpen(true);
-  }
-
-  function toggleLock(n: Note) {
-    if (n.locked) {
-      setLockState({
-        mode: "unlock",
-        note: n,
-        after: (note) => {
-          updateNote(note.id, { locked: false });
-          toast.success("Unlocked");
-        },
-      });
-    } else {
-      setLockState({
-        mode: "lock",
-        note: n,
-        after: (note) => {
-          updateNote(note.id, { locked: true });
-          toast.success("Locked");
-        },
-      });
-    }
-  }
 
   return (
     <AppShell search={query} onSearchChange={setQuery}>
@@ -162,37 +104,16 @@ function NotesPage() {
             ))}
           </SelectContent>
         </Select>
-        <div className="ml-auto">
-          <button
-            type="button"
-            onClick={() => setShowHidden((s) => !s)}
-            aria-label={showHidden ? "Hide hidden notes" : "Show hidden notes"}
-            title={showHidden ? "Hide hidden notes" : "Show hidden notes"}
-            className="flex size-9 items-center justify-center rounded-full bg-surface text-muted-foreground ring-1 ring-border transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            {showHidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-          </button>
-        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowHidden((s) => !s)}>
+          {showHidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          {showHidden ? "Hide hidden" : "Show hidden"}
+        </Button>
       </div>
-
-      {categoryStats && (
-        <div className="mb-5 flex items-center justify-between rounded-xl bg-brand/5 px-4 py-3 ring-1 ring-brand/15">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-brand">{cat}</p>
-            <p className="mt-0.5 text-sm">
-              <span className="font-semibold">{categoryStats.count}</span> notes •{" "}
-              <span className="font-semibold">{formatSize(categoryStats.size)}</span> used
-            </p>
-          </div>
-        </div>
-      )}
 
       {list.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-16 text-center">
           <h3 className="text-sm font-semibold">No notes yet</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Create a note to keep ideas, passwords, or anything secure.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Create a note to keep ideas, passwords, or anything secure.</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -213,7 +134,12 @@ function NotesPage() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openNote(n)}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setEditing(n);
+                        setOpen(true);
+                      }}
+                    >
                       <Pencil className="size-4" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateNote(n.id, { pinned: !n.pinned })}>
@@ -223,7 +149,7 @@ function NotesPage() {
                     <DropdownMenuItem onClick={() => updateNote(n.id, { favorite: !n.favorite })}>
                       <Heart className="size-4" /> {n.favorite ? "Unfavorite" : "Favorite"}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toggleLock(n)}>
+                    <DropdownMenuItem onClick={() => updateNote(n.id, { locked: !n.locked })}>
                       {n.locked ? <Unlock className="size-4" /> : <Lock className="size-4" />}
                       {n.locked ? "Unlock" : "Lock"}
                     </DropdownMenuItem>
@@ -246,15 +172,23 @@ function NotesPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <button onClick={() => openNote(n)} className="text-left">
+              <button
+                onClick={() => {
+                  if (n.locked) {
+                    const p = window.prompt("Note is locked. Enter password:");
+                    if (!p) return;
+                  }
+                  setEditing(n);
+                  setOpen(true);
+                }}
+                className="text-left"
+              >
                 <h3 className="text-base font-semibold">
                   {n.pinned && <Pin className="mr-1 inline size-3.5 text-brand" />}
                   {n.title}
                 </h3>
                 <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-muted-foreground text-pretty">
-                  {n.locked && !isUnlocked(n.id)
-                    ? "🔒 Locked — open to view content"
-                    : n.content || "Empty note"}
+                  {n.locked ? "🔒 Locked — open to view content" : n.content || "Empty note"}
                 </p>
               </button>
               <div className="mt-4 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
@@ -270,13 +204,6 @@ function NotesPage() {
       )}
 
       <NoteDialog open={open} onOpenChange={setOpen} note={editing} />
-      <LockDialog
-        open={!!lockState}
-        onOpenChange={(v) => !v && setLockState(null)}
-        mode={lockState?.mode ?? "unlock"}
-        itemName={lockState?.note.title}
-        onSuccess={() => lockState && lockState.after(lockState.note)}
-      />
     </AppShell>
   );
 }

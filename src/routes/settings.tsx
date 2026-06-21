@@ -9,10 +9,6 @@ import {
   ShieldCheck,
   Info,
   UserRound,
-  KeyRound,
-  Lock,
-  FileText,
-  StickyNote,
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -31,7 +27,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useCurrentUser, useVault } from "@/lib/store";
-import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize } from "@/lib/file-utils";
 import { toast } from "sonner";
 
@@ -46,32 +41,16 @@ function SettingsPage() {
   const theme = useVault((s) => s.theme);
   const setTheme = useVault((s) => s.setTheme);
   const allFiles = useVault((s) => s.files);
-  const allNotes = useVault((s) => s.notes);
   const exportData = useVault((s) => s.exportData);
   const importData = useVault((s) => s.importData);
   const resetVault = useVault((s) => s.resetVault);
   const updateUsername = useVault((s) => s.updateUsername);
 
-  const hasLockPassword = useVault((s) => s.hasLockPassword);
-  const setLockPassword = useVault((s) => s.setLockPassword);
-  const changeLockPassword = useVault((s) => s.changeLockPassword);
-  const removeLockPassword = useVault((s) => s.removeLockPassword);
-  const lockAll = useVault((s) => s.lockAll);
-
-  const filesSize = useMemo(() => allFiles.reduce((s, f) => s + f.size, 0), [allFiles]);
-  const notesSize = useMemo(() => estimateNotesSize(allNotes), [allNotes]);
-  const totalSize = filesSize + notesSize;
-  const pctFiles = totalSize > 0 ? Math.round((filesSize / totalSize) * 100) : 0;
-  const pctNotes = 100 - pctFiles;
+  const files = useMemo(() => allFiles, [allFiles]);
+  const totalSize = files.reduce((s, f) => s + f.size, 0);
 
   const [username, setUsername] = useState(user?.username ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Lock password fields
-  const has = hasLockPassword();
-  const [oldPwd, setOldPwd] = useState("");
-  const [newPwd, setNewPwd] = useState("");
-  const [confirmPwd, setConfirmPwd] = useState("");
 
   function handleExport() {
     const blob = new Blob([exportData()], { type: "application/json" });
@@ -98,30 +77,6 @@ function SettingsPage() {
     await resetVault();
     toast.success("Vault reset");
     router.navigate({ to: "/", replace: true });
-  }
-
-  async function handleSavePassword() {
-    if (!newPwd || newPwd.length < 4) return toast.error("Password must be at least 4 characters");
-    if (newPwd !== confirmPwd) return toast.error("Passwords don't match");
-    if (has) {
-      const ok = await changeLockPassword(oldPwd, newPwd);
-      if (!ok) return toast.error("Current password is incorrect");
-      toast.success("Password updated");
-    } else {
-      await setLockPassword(newPwd);
-      toast.success("Lock password created");
-    }
-    setOldPwd("");
-    setNewPwd("");
-    setConfirmPwd("");
-  }
-
-  async function handleRemovePassword() {
-    if (!oldPwd) return toast.error("Enter your current password");
-    const ok = await removeLockPassword(oldPwd);
-    if (!ok) return toast.error("Incorrect password");
-    setOldPwd("");
-    toast.success("Lock password removed. Items have been unlocked.");
   }
 
   return (
@@ -170,88 +125,7 @@ function SettingsPage() {
           <div className="rounded-lg bg-secondary/50 p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Total used</p>
             <p className="mt-1 text-2xl font-semibold">{formatSize(totalSize)}</p>
-            <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-border">
-              <div className="h-full bg-brand" style={{ width: `${pctFiles}%` }} />
-              <div className="h-full bg-violet-500" style={{ width: `${pctNotes}%` }} />
-            </div>
-            <div className="mt-3 space-y-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="size-2 rounded-full bg-brand" />
-                  <FileText className="size-3" /> Files ({allFiles.length})
-                </span>
-                <span className="font-medium">{formatSize(filesSize)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="size-2 rounded-full bg-violet-500" />
-                  <StickyNote className="size-3" /> Notes ({allNotes.length})
-                </span>
-                <span className="font-medium">{formatSize(notesSize)}</span>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        <Section
-          title="Lock password"
-          description="Used to lock and unlock individual files and notes."
-        >
-          <div className="space-y-3">
-            {has && (
-              <div className="space-y-1.5">
-                <Label htmlFor="oldpwd">Current password</Label>
-                <Input
-                  id="oldpwd"
-                  type="password"
-                  value={oldPwd}
-                  onChange={(e) => setOldPwd(e.target.value)}
-                />
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="newpwd">{has ? "New password" : "Create password"}</Label>
-              <Input
-                id="newpwd"
-                type="password"
-                value={newPwd}
-                onChange={(e) => setNewPwd(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cpwd">Confirm password</Label>
-              <Input
-                id="cpwd"
-                type="password"
-                value={confirmPwd}
-                onChange={(e) => setConfirmPwd(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleSavePassword}
-                className="bg-brand text-brand-foreground hover:bg-brand/90"
-              >
-                <KeyRound className="size-4" /> {has ? "Update password" : "Create password"}
-              </Button>
-              {has && (
-                <>
-                  <Button variant="outline" onClick={() => lockAll()}>
-                    <Lock className="size-4" /> Lock all now
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={handleRemovePassword}
-                  >
-                    Remove password
-                  </Button>
-                </>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              The same password protects both files and notes. It never leaves this device.
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{files.length} files in your vault</p>
           </div>
         </Section>
 

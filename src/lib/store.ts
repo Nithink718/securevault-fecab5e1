@@ -31,57 +31,39 @@ function uid() {
   return Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
 }
 
-async function sha256(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 interface VaultState {
   profile: Profile | null;
+  /** Stable id of the local profile — kept for compatibility with item filters. */
   currentUserId: string | null;
   files: FileMeta[];
   notes: Note[];
   categories: Category[];
   theme: "light" | "dark";
-  lockPasswordHash: string | null;
-  /** Session-only ids that have been unlocked. NOT persisted. */
-  unlockedIds: Record<string, true>;
 
+  // profile
   createProfile: (username: string) => void;
   updateUsername: (username: string) => void;
   resetVault: () => Promise<void>;
 
+  // categories
   addCategory: (name: string, type: "file" | "note") => void;
   renameCategory: (id: string, name: string) => void;
   deleteCategory: (id: string) => void;
 
+  // files
   addFile: (
-    f: Omit<
-      FileMeta,
-      "id" | "userId" | "uploadDate" | "favorite" | "hidden" | "locked" | "pinned"
-    > &
-      Partial<Pick<FileMeta, "favorite" | "hidden" | "locked" | "pinned">>,
+    f: Omit<FileMeta, "id" | "userId" | "uploadDate" | "favorite" | "hidden" | "locked"> &
+      Partial<Pick<FileMeta, "favorite" | "hidden" | "locked">>,
   ) => string;
   updateFile: (id: string, patch: Partial<FileMeta>) => void;
   deleteFile: (id: string) => Promise<void>;
   touchFile: (id: string) => void;
 
+  // notes
   addNote: (n: Partial<Note>) => string;
   updateNote: (id: string, patch: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   touchNote: (id: string) => void;
-
-  // lock
-  hasLockPassword: () => boolean;
-  setLockPassword: (pwd: string) => Promise<void>;
-  changeLockPassword: (oldPwd: string, newPwd: string) => Promise<boolean>;
-  removeLockPassword: (pwd: string) => Promise<boolean>;
-  verifyPassword: (pwd: string) => Promise<boolean>;
-  markUnlocked: (id: string) => void;
-  isUnlocked: (id: string) => boolean;
-  lockAll: () => void;
 
   // settings
   setTheme: (t: "light" | "dark") => void;
@@ -117,8 +99,6 @@ export const useVault = create<VaultState>()(
       notes: [],
       categories: [],
       theme: "light",
-      lockPasswordHash: null,
-      unlockedIds: {},
 
       createProfile: (username) => {
         const name = username.trim();
@@ -145,8 +125,6 @@ export const useVault = create<VaultState>()(
           files: [],
           notes: [],
           categories: [],
-          lockPasswordHash: null,
-          unlockedIds: {},
         });
       },
 
@@ -154,10 +132,7 @@ export const useVault = create<VaultState>()(
         const id = get().currentUserId;
         if (!id || !name.trim()) return;
         set((s) => ({
-          categories: [
-            ...s.categories,
-            { id: uid(), userId: id, name: name.trim(), type, builtIn: false },
-          ],
+          categories: [...s.categories, { id: uid(), userId: id, name: name.trim(), type }],
         }));
       },
       renameCategory: (id, name) =>
@@ -167,7 +142,6 @@ export const useVault = create<VaultState>()(
       addFile: (f) => {
         const userId = get().currentUserId ?? PROFILE_ID;
         const id = uid();
-        const now = Date.now();
         const meta: FileMeta = {
           id,
           userId,
@@ -179,19 +153,13 @@ export const useVault = create<VaultState>()(
           favorite: f.favorite ?? false,
           hidden: f.hidden ?? false,
           locked: f.locked ?? false,
-          pinned: f.pinned ?? false,
-          uploadDate: now,
-          modifiedDate: now,
+          uploadDate: Date.now(),
         };
         set((s) => ({ files: [...s.files, meta] }));
         return id;
       },
       updateFile: (id, patch) =>
-        set((s) => ({
-          files: s.files.map((f) =>
-            f.id === id ? { ...f, ...patch, modifiedDate: Date.now() } : f,
-          ),
-        })),
+        set((s) => ({ files: s.files.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
       deleteFile: async (id) => {
         await deleteBlob(id).catch(() => {});
         set((s) => ({ files: s.files.filter((f) => f.id !== id) }));
@@ -233,40 +201,6 @@ export const useVault = create<VaultState>()(
           notes: s.notes.map((n) => (n.id === id ? { ...n, lastOpened: Date.now() } : n)),
         })),
 
-      hasLockPassword: () => !!get().lockPasswordHash,
-      setLockPassword: async (pwd) => {
-        const hash = await sha256(pwd);
-        set({ lockPasswordHash: hash });
-      },
-      changeLockPassword: async (oldPwd, newPwd) => {
-        const ok = await get().verifyPassword(oldPwd);
-        if (!ok) return false;
-        const hash = await sha256(newPwd);
-        set({ lockPasswordHash: hash, unlockedIds: {} });
-        return true;
-      },
-      removeLockPassword: async (pwd) => {
-        const ok = await get().verifyPassword(pwd);
-        if (!ok) return false;
-        // unlock everything since password is gone
-        set((s) => ({
-          lockPasswordHash: null,
-          unlockedIds: {},
-          files: s.files.map((f) => ({ ...f, locked: false })),
-          notes: s.notes.map((n) => ({ ...n, locked: false })),
-        }));
-        return true;
-      },
-      verifyPassword: async (pwd) => {
-        const h = get().lockPasswordHash;
-        if (!h) return false;
-        return (await sha256(pwd)) === h;
-      },
-      markUnlocked: (id) =>
-        set((s) => ({ unlockedIds: { ...s.unlockedIds, [id]: true } })),
-      isUnlocked: (id) => !!get().unlockedIds[id],
-      lockAll: () => set({ unlockedIds: {} }),
-
       setTheme: (t) => {
         set({ theme: t });
         if (typeof document !== "undefined") {
@@ -301,7 +235,6 @@ export const useVault = create<VaultState>()(
             ...f,
             id: uid(),
             userId,
-            pinned: f.pinned ?? false,
           }));
           set((s) => ({
             categories: [...s.categories, ...newCats],
@@ -328,7 +261,6 @@ export const useVault = create<VaultState>()(
         notes: s.notes,
         categories: s.categories,
         theme: s.theme,
-        lockPasswordHash: s.lockPasswordHash,
       }),
     },
   ),
@@ -337,4 +269,3 @@ export const useVault = create<VaultState>()(
 export function useCurrentUser() {
   return useVault((s) => s.profile);
 }
-

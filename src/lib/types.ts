@@ -27,9 +27,7 @@ export interface FileMeta {
   favorite: boolean;
   hidden: boolean;
   locked: boolean;
-  pinned: boolean;
   uploadDate: number;
-  modifiedDate?: number;
   lastOpened?: number;
 }
 
