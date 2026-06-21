@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
-import { PdfViewer } from "./pdf-viewer";
 import { Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const PdfViewer = lazy(() =>
+  import("./pdf-viewer").then((m) => ({ default: m.PdfViewer })),
+);
 
 export function FilePreviewDialog({
   file,
