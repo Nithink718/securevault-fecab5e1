@@ -30,7 +30,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { estimateNotesSize, useCurrentUser, useVault } from "@/lib/store";
+import { useCurrentUser, useVault } from "@/lib/store";
+import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize } from "@/lib/file-utils";
 import { toast } from "sonner";
 

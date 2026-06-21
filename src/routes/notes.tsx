@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { estimateNotesSize, useVault } from "@/lib/store";
+import { useVault } from "@/lib/store";
+import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize, timeAgo } from "@/lib/file-utils";
 import { NoteDialog } from "@/components/note-dialog";
 import { LockDialog } from "@/components/lock-dialog";

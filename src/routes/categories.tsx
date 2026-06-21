@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { estimateNotesSize, useVault } from "@/lib/store";
+import { useVault } from "@/lib/store";
+import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize } from "@/lib/file-utils";
 import type { Category } from "@/lib/types";
 import { toast } from "sonner";
