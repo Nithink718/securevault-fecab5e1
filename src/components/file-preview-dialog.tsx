@@ -56,7 +56,15 @@ export function FilePreviewDialog({
             Loading…
           </div>
         ) : file.kind === "pdf" ? (
-          <PdfViewer url={url} fileName={file.fileName} />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Loading PDF viewer…
+              </div>
+            }
+          >
+            <PdfViewer url={url} fileName={file.fileName} />
+          </Suspense>
         ) : file.kind === "image" ? (
           <div className="flex h-full items-center justify-center bg-secondary/40 p-4">
             <img src={url} alt={file.fileName} className="max-h-full max-w-full object-contain" />
