@@ -338,10 +338,3 @@ export function useCurrentUser() {
   return useVault((s) => s.profile);
 }
 
-export function estimateNotesSize(notes: Note[]): number {
-  let total = 0;
-  for (const n of notes) {
-    total += (n.title?.length ?? 0) + (n.content?.length ?? 0) + (n.category?.length ?? 0) + 100;
-  }
-  return total;
-}
