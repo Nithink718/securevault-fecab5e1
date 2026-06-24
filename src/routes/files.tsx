@@ -44,7 +44,6 @@ import { formatSize, timeAgo } from "@/lib/file-utils";
 import { getBlob } from "@/lib/idb";
 import { UploadDialog } from "@/components/upload-dialog";
 import { FilePreviewDialog } from "@/components/file-preview-dialog";
-import { FileDetailDialog } from "@/components/file-detail-dialog";
 import { LockDialog } from "@/components/lock-dialog";
 import { toast } from "sonner";
 import type { FileMeta } from "@/lib/types";
@@ -101,7 +100,6 @@ function FilesPage() {
   const [moveFor, setMoveFor] = useState<FileMeta | null>(null);
   const [moveTo, setMoveTo] = useState<string>("");
   const [previewFile, setPreviewFile] = useState<FileMeta | null>(null);
-  const [detailFile, setDetailFile] = useState<FileMeta | null>(null);
   const [lockState, setLockState] = useState<
     | null
     | { mode: "lock" | "unlock"; file: FileMeta; after: (f: FileMeta) => void }
@@ -309,7 +307,7 @@ function FilesPage() {
                 </span>
               )}
               <button
-                onClick={() => setDetailFile(f)}
+                onClick={() => openFile(f)}
                 className="flex flex-1 items-center gap-4 text-left min-w-0"
               >
                 <FileTypeIcon kind={f.kind} />
@@ -353,36 +351,6 @@ function FilesPage() {
       )}
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
-
-      <FileDetailDialog
-        file={detailFile ? files.find((x) => x.id === detailFile.id) ?? null : null}
-        open={!!detailFile}
-        onOpenChange={(v) => !v && setDetailFile(null)}
-        onOpen={(f) => {
-          setDetailFile(null);
-          openFile(f);
-        }}
-        onDownload={(f) => downloadFile(f)}
-        onRename={(f) => {
-          setDetailFile(null);
-          setRenameFor(f);
-          setRenameVal(f.fileName);
-        }}
-        onDelete={async (f) => {
-          if (!confirm(`Delete "${f.fileName}"?`)) return;
-          setDetailFile(null);
-          await deleteFile(f.id);
-          toast.success("File deleted");
-        }}
-        onToggleFavorite={(f) => updateFile(f.id, { favorite: !f.favorite })}
-        onTogglePin={(f) => updateFile(f.id, { pinned: !f.pinned })}
-        onToggleHide={(f) => updateFile(f.id, { hidden: !f.hidden })}
-        onToggleLock={(f) => {
-          setDetailFile(null);
-          toggleLock(f);
-        }}
-      />
-
       <FilePreviewDialog
         file={previewFile}
         open={!!previewFile}
