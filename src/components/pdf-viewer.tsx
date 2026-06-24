@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,13 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Configure pdf.js worker (Vite-friendly URL import).
-if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).toString();
-}
+pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 export function PdfViewer({ url, fileName }: { url: string; fileName: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +26,8 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
 
   useEffect(() => {
     function measure() {
-      if (containerRef.current) setWidth(containerRef.current.clientWidth - 8);
+      if (containerRef.current)
+        setWidth(Math.max(280, containerRef.current.clientWidth - 16));
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -57,12 +53,12 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
   const renderWidth = scale === "fit" ? width : undefined;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2">
-        <p className="truncate text-xs font-medium" title={fileName}>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface/60 px-3 py-2 backdrop-blur">
+        <p className="truncate text-xs font-medium text-muted-foreground" title={fileName}>
           {fileName}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
@@ -72,7 +68,7 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-[64px] text-center text-xs tabular-nums">
+          <span className="min-w-[60px] text-center text-xs tabular-nums">
             {page} / {numPages || "…"}
           </span>
           <Button
@@ -84,7 +80,7 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
           >
             <ChevronRight className="size-4" />
           </Button>
-          <div className="mx-2 h-5 w-px bg-border" />
+          <div className="mx-1 h-5 w-px bg-border" />
           <Button
             size="icon"
             variant="ghost"
@@ -108,16 +104,29 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
           >
             <ZoomIn className="size-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={() => setScale("fit")} aria-label="Fit to width">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setScale("fit")}
+            aria-label="Fit to width"
+          >
             <Maximize className="size-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={toggleFullscreen} aria-label="Full screen">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggleFullscreen}
+            aria-label="Full screen"
+          >
             {fs ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </Button>
         </div>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-auto bg-secondary/40 p-3">
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 overflow-auto bg-secondary/40 p-3"
+      >
         <div className="mx-auto flex justify-center">
           <Document
             file={url}
@@ -125,8 +134,14 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
               setNumPages(numPages);
               setPage(1);
             }}
-            loading={<div className="p-6 text-xs text-muted-foreground">Loading PDF…</div>}
-            error={<div className="p-6 text-xs text-destructive">Failed to render PDF.</div>}
+            loading={
+              <div className="p-6 text-xs text-muted-foreground">Loading PDF…</div>
+            }
+            error={
+              <div className="p-6 text-xs text-destructive">
+                Failed to render this PDF.
+              </div>
+            }
           >
             <Page
               pageNumber={page}
