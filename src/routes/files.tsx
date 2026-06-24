@@ -353,6 +353,36 @@ function FilesPage() {
       )}
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+
+      <FileDetailDialog
+        file={detailFile}
+        open={!!detailFile}
+        onOpenChange={(v) => !v && setDetailFile(null)}
+        onOpen={(f) => {
+          setDetailFile(null);
+          openFile(f);
+        }}
+        onDownload={(f) => downloadFile(f)}
+        onRename={(f) => {
+          setDetailFile(null);
+          setRenameFor(f);
+          setRenameVal(f.fileName);
+        }}
+        onDelete={async (f) => {
+          if (!confirm(`Delete "${f.fileName}"?`)) return;
+          setDetailFile(null);
+          await deleteFile(f.id);
+          toast.success("File deleted");
+        }}
+        onToggleFavorite={(f) => updateFile(f.id, { favorite: !f.favorite })}
+        onTogglePin={(f) => updateFile(f.id, { pinned: !f.pinned })}
+        onToggleHide={(f) => updateFile(f.id, { hidden: !f.hidden })}
+        onToggleLock={(f) => {
+          setDetailFile(null);
+          toggleLock(f);
+        }}
+      />
+
       <FilePreviewDialog
         file={previewFile}
         open={!!previewFile}
