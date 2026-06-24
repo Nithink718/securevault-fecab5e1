@@ -44,6 +44,7 @@ import { formatSize, timeAgo } from "@/lib/file-utils";
 import { getBlob } from "@/lib/idb";
 import { UploadDialog } from "@/components/upload-dialog";
 import { FilePreviewDialog } from "@/components/file-preview-dialog";
+import { FileDetailDialog } from "@/components/file-detail-dialog";
 import { LockDialog } from "@/components/lock-dialog";
 import { toast } from "sonner";
 import type { FileMeta } from "@/lib/types";
