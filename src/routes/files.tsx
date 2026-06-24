@@ -101,6 +101,7 @@ function FilesPage() {
   const [moveFor, setMoveFor] = useState<FileMeta | null>(null);
   const [moveTo, setMoveTo] = useState<string>("");
   const [previewFile, setPreviewFile] = useState<FileMeta | null>(null);
+  const [detailFile, setDetailFile] = useState<FileMeta | null>(null);
   const [lockState, setLockState] = useState<
     | null
     | { mode: "lock" | "unlock"; file: FileMeta; after: (f: FileMeta) => void }
