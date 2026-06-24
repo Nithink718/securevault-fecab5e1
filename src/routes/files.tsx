@@ -312,6 +312,14 @@ function FilesPage() {
                 onClick={() => setDetailFile(f)}
                 className="flex flex-1 items-center gap-4 text-left min-w-0"
               >
+                <FileTypeIcon kind={f.kind} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{f.fileName}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {f.category} • {formatSize(f.size)} • {timeAgo(f.uploadDate)}
+                  </p>
+                </div>
+              </button>
               <div className="flex shrink-0 items-center gap-1">
                 {f.favorite && <Heart className="size-3.5 fill-rose-500 text-rose-500" />}
                 {f.locked && <Lock className="size-3.5 text-muted-foreground" />}
