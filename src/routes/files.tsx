@@ -355,7 +355,7 @@ function FilesPage() {
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
 
       <FileDetailDialog
-        file={detailFile}
+        file={detailFile ? files.find((x) => x.id === detailFile.id) ?? null : null}
         open={!!detailFile}
         onOpenChange={(v) => !v && setDetailFile(null)}
         onOpen={(f) => {
