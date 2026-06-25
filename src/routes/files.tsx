@@ -487,22 +487,8 @@ function FileInfoMenu({
               </p>
             </div>
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-y-1.5 text-[11px]">
-            <Info label="Size" value={formatSize(file.size)} />
-            <Info label="Created" value={new Date(file.uploadDate).toLocaleDateString()} />
-            <Info
-              label="Modified"
-              value={
-                file.modifiedDate
-                  ? new Date(file.modifiedDate).toLocaleDateString()
-                  : "—"
-              }
-            />
-            <Info label="Pinned" value={file.pinned ? "Yes" : "No"} />
-            <Info label="Locked" value={file.locked ? "Yes" : "No"} />
-            <Info label="Hidden" value={file.hidden ? "Yes" : "No"} />
-          </dl>
         </div>
+
         <div className="grid grid-cols-1 p-1">
           <Action icon={<ExternalLink className="size-4" />} label="Open" onClick={onOpen} />
           <Action icon={<Pencil className="size-4" />} label="Rename" onClick={onRename} />
@@ -542,14 +528,6 @@ function FileInfoMenu({
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
-    </>
-  );
-}
 
 function Action({
   icon,
