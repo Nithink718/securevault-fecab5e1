@@ -32,6 +32,7 @@ export function FilePreviewDialog({
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const updateFile = useVault((s) => s.updateFile);
 
   useEffect(() => {
