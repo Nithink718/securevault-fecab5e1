@@ -164,11 +164,11 @@ export function FilePreviewDialog({
             <div className="border-t border-border/60 bg-secondary/20 px-3 py-3 sm:px-5">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                 <Button
-                  onClick={openExternal}
+                  onClick={openFullscreen}
                   disabled={!url}
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
                 >
-                  <ExternalLink className="size-4" /> Open
+                  <Maximize2 className="size-4" /> Open
                 </Button>
                 <Button onClick={download} disabled={!url} variant="outline">
                   <Download className="size-4" /> Download
