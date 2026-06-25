@@ -105,7 +105,7 @@ export function FilePreviewDialog({
             </div>
 
             {/* Preview */}
-            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-secondary/30">
+            <div ref={previewRef} className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-secondary/30">
               {loading || !url ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
               ) : file.kind === "pdf" ? (
