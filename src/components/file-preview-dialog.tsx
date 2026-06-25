@@ -61,9 +61,14 @@ export function FilePreviewDialog({
     a.click();
   }
 
-  function openExternal() {
-    if (!url) return;
-    window.open(url, "_blank", "noopener,noreferrer");
+  function openFullscreen() {
+    const el = previewRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => toast.error("Fullscreen not available"));
+    } else {
+      document.exitFullscreen?.();
+    }
   }
 
   function toggleFavorite() {
