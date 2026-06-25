@@ -528,14 +528,6 @@ function FileInfoMenu({
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
-    </>
-  );
-}
 
 function Action({
   icon,
