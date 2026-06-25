@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
 import {
   Download,
-  ExternalLink,
+  Maximize2,
   Heart,
   Lock,
   Pin,
