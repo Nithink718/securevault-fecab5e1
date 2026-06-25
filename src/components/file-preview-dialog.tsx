@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
 import {
   Download,
-  ExternalLink,
+  Maximize2,
   Heart,
   Lock,
   Pin,
@@ -32,6 +32,7 @@ export function FilePreviewDialog({
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const updateFile = useVault((s) => s.updateFile);
 
   useEffect(() => {
@@ -60,9 +61,14 @@ export function FilePreviewDialog({
     a.click();
   }
 
-  function openExternal() {
-    if (!url) return;
-    window.open(url, "_blank", "noopener,noreferrer");
+  function openFullscreen() {
+    const el = previewRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => toast.error("Fullscreen not available"));
+    } else {
+      document.exitFullscreen?.();
+    }
   }
 
   function toggleFavorite() {
@@ -99,7 +105,7 @@ export function FilePreviewDialog({
             </div>
 
             {/* Preview */}
-            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-secondary/30">
+            <div ref={previewRef} className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-secondary/30">
               {loading || !url ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
               ) : file.kind === "pdf" ? (
@@ -158,11 +164,11 @@ export function FilePreviewDialog({
             <div className="border-t border-border/60 bg-secondary/20 px-3 py-3 sm:px-5">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                 <Button
-                  onClick={openExternal}
+                  onClick={openFullscreen}
                   disabled={!url}
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
                 >
-                  <ExternalLink className="size-4" /> Open
+                  <Maximize2 className="size-4" /> Open
                 </Button>
                 <Button onClick={download} disabled={!url} variant="outline">
                   <Download className="size-4" /> Download
