@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import "@tanstack/react-start";
+import "@tanstack/start-client-core/serverRoute";
 
 const BASE_URL = "";
 
