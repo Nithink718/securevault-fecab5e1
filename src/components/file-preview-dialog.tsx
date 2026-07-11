@@ -1,5 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
 import {
@@ -34,6 +39,8 @@ export function FilePreviewDialog({
   const [loading, setLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const updateFile = useVault((s) => s.updateFile);
+  const latestFile = useVault((s) => (file ? s.files.find((f) => f.id === file.id) : null));
+  const displayFile = latestFile ?? file;
 
   useEffect(() => {
     let revoke: string | null = null;
@@ -54,10 +61,10 @@ export function FilePreviewDialog({
   }, [open, file]);
 
   function download() {
-    if (!url || !file) return;
+    if (!url || !displayFile) return;
     const a = document.createElement("a");
     a.href = url;
-    a.download = file.fileName;
+    a.download = displayFile.fileName;
     a.click();
   }
 
@@ -72,9 +79,9 @@ export function FilePreviewDialog({
   }
 
   function toggleFavorite() {
-    if (!file) return;
-    updateFile(file.id, { favorite: !file.favorite });
-    toast.success(file.favorite ? "Removed from favorites" : "Added to favorites");
+    if (!displayFile) return;
+    updateFile(displayFile.id, { favorite: !displayFile.favorite });
+    toast.success(displayFile.favorite ? "Removed from favorites" : "Added to favorites");
   }
 
   const fmtDate = (n?: number) =>
@@ -85,19 +92,22 @@ export function FilePreviewDialog({
       <DialogContent
         className="flex h-[92vh] w-[calc(100vw-1rem)] max-w-3xl flex-col gap-0 overflow-hidden border-border/60 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:rounded-2xl"
       >
-        <DialogTitle className="sr-only">{file?.fileName ?? "Preview"}</DialogTitle>
+        <DialogTitle className="sr-only">{displayFile?.fileName ?? "Preview"}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Preview the selected file, review its details, and use file actions without leaving the page.
+        </DialogDescription>
 
-        {file && (
+        {displayFile && (
           <>
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3 sm:px-5">
-              <FileTypeIcon kind={file.kind} className="size-10 shrink-0 rounded-xl" />
+              <FileTypeIcon kind={displayFile.kind} className="size-10 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold sm:text-base" title={file.fileName}>
-                  {file.fileName}
+                <p className="truncate text-sm font-semibold sm:text-base" title={displayFile.fileName}>
+                  {displayFile.fileName}
                 </p>
                 <p className="mt-0.5 truncate text-xs uppercase tracking-wider text-muted-foreground">
-                  {file.kind} • {file.category}
+                  {displayFile.kind} • {displayFile.category}
                 </p>
               </div>
               {/* Close handled by DialogContent's built-in X (top-right) */}
@@ -108,33 +118,33 @@ export function FilePreviewDialog({
             <div ref={previewRef} className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-secondary/30">
               {loading || !url ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
-              ) : file.kind === "pdf" ? (
+              ) : displayFile.kind === "pdf" ? (
                 <Suspense
                   fallback={
                     <div className="text-sm text-muted-foreground">Loading PDF viewer…</div>
                   }
                 >
-                  <PdfViewer url={url} fileName={file.fileName} />
+                  <PdfViewer url={url} fileName={displayFile.fileName} />
                 </Suspense>
-              ) : file.kind === "image" ? (
+              ) : displayFile.kind === "image" ? (
                 <img
                   src={url}
-                  alt={file.fileName}
+                  alt={displayFile.fileName}
                   className="max-h-full max-w-full object-contain p-4"
                 />
-              ) : file.kind === "video" ? (
+              ) : displayFile.kind === "video" ? (
                 <video src={url} controls className="max-h-full max-w-full bg-black" />
-              ) : file.kind === "audio" ? (
+              ) : displayFile.kind === "audio" ? (
                 <audio src={url} controls className="w-full max-w-md" />
-              ) : file.kind === "text" ? (
-                <iframe src={url} title={file.fileName} className="h-full w-full bg-white" />
+              ) : displayFile.kind === "text" ? (
+                <iframe src={url} title={displayFile.fileName} className="h-full w-full bg-white" />
               ) : (
                 <div className="flex flex-col items-center gap-3 p-8 text-center">
                   <div className="flex size-16 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
                     <FileText className="size-7" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">{file.fileName}</p>
+                    <p className="text-sm font-semibold">{displayFile.fileName}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       In-app preview is not available for this file type.
                     </p>
@@ -149,13 +159,13 @@ export function FilePreviewDialog({
                 Information
               </p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
-                <InfoCell label="Category" value={file.category} />
-                <InfoCell label="Type" value={file.kind.toUpperCase()} />
-                <InfoCell label="Size" value={formatSize(file.size)} />
-                <InfoCell label="Uploaded" value={fmtDate(file.uploadDate)} />
+                <InfoCell label="Category" value={displayFile.category} />
+                <InfoCell label="Type" value={displayFile.kind.toUpperCase()} />
+                <InfoCell label="Size" value={formatSize(displayFile.size)} />
+                <InfoCell label="Uploaded" value={fmtDate(displayFile.uploadDate)} />
                 <InfoCell
                   label="Last Opened"
-                  value={fmtDate(file.lastOpened)}
+                  value={fmtDate(displayFile.lastOpened)}
                 />
               </div>
             </div>
@@ -176,12 +186,12 @@ export function FilePreviewDialog({
                 <Button
                   onClick={toggleFavorite}
                   variant="outline"
-                  className={file.favorite ? "border-rose-300 text-rose-600" : ""}
+                  className={displayFile.favorite ? "border-rose-300 text-rose-600" : ""}
                 >
                   <Heart
-                    className={`size-4 ${file.favorite ? "fill-rose-500 text-rose-500" : ""}`}
+                    className={`size-4 ${displayFile.favorite ? "fill-rose-500 text-rose-500" : ""}`}
                   />
-                  {file.favorite ? "Favorited" : "Favorite"}
+                  {displayFile.favorite ? "Favorited" : "Favorite"}
                 </Button>
                 <Button variant="outline" disabled title="Coming soon">
                   <Lock className="size-4" /> Lock
