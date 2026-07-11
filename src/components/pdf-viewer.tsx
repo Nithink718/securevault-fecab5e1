@@ -26,17 +26,35 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
   const [scale, setScale] = useState<number | "fit">("fit");
-  const [width, setWidth] = useState<number>(800);
+  const [fitWidth, setFitWidth] = useState<number>(720);
   const [fs, setFs] = useState(false);
 
   useEffect(() => {
+    let frame = 0;
+
     function measure() {
-      if (containerRef.current) setWidth(containerRef.current.clientWidth - 8);
+      const el = containerRef.current;
+      if (!el) return;
+
+      // clientWidth changes when the vertical scrollbar appears. Using the
+      // border-box width and a small threshold prevents a constant re-render
+      // loop while keeping fit-to-width responsive.
+      const next = Math.max(280, Math.floor(el.getBoundingClientRect().width - 56));
+      setFitWidth((current) => (Math.abs(current - next) > 8 ? next : current));
     }
-    measure();
-    const ro = new ResizeObserver(measure);
+
+    function scheduleMeasure() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    }
+
+    scheduleMeasure();
+    const ro = new ResizeObserver(scheduleMeasure);
     if (containerRef.current) ro.observe(containerRef.current);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -54,15 +72,15 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
   }
 
   const numericScale = scale === "fit" ? undefined : scale;
-  const renderWidth = scale === "fit" ? width : undefined;
+  const renderWidth = scale === "fit" ? fitWidth : undefined;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2">
-        <p className="truncate text-xs font-medium" title={fileName}>
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2">
+        <p className="min-w-0 flex-1 truncate text-xs font-medium" title={fileName}>
           {fileName}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
@@ -108,7 +126,12 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
           >
             <ZoomIn className="size-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={() => setScale("fit")} aria-label="Fit to width">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setScale("fit")}
+            aria-label="Fit to width"
+          >
             <Maximize className="size-4" />
           </Button>
           <Button size="icon" variant="ghost" onClick={toggleFullscreen} aria-label="Full screen">
@@ -117,14 +140,18 @@ export function PdfViewer({ url, fileName }: { url: string; fileName: string }) 
         </div>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-auto bg-secondary/40 p-3">
-        <div className="mx-auto flex justify-center">
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll bg-secondary/40 p-3 [scrollbar-gutter:stable]"
+      >
+        <div className="mx-auto flex min-w-fit justify-center">
           <Document
             file={url}
             onLoadSuccess={({ numPages }) => {
               setNumPages(numPages);
-              setPage(1);
+              setPage((current) => Math.min(Math.max(1, current), numPages));
             }}
+            onLoadError={(error) => console.error("PDF load error", error)}
             loading={<div className="p-6 text-xs text-muted-foreground">Loading PDF…</div>}
             error={<div className="p-6 text-xs text-destructive">Failed to render PDF.</div>}
           >
