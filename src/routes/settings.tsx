@@ -148,6 +148,9 @@ function SettingsPage() {
     } catch (e) {
       if ((e as Error).name !== "AbortError") toast.error((e as Error).message);
     }
+  }
+
+
 
   return (
     <AppShell>
