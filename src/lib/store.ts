@@ -130,12 +130,26 @@ export const useVault = create<VaultState>()(
       categories: [],
       theme: "light",
       lockPasswordHash: null,
+      storageConfig: null,
       unlockedIds: {},
 
-      createProfile: (username) => {
+      createProfile: async ({ username, pin, questions }) => {
         const name = username.trim();
         if (!name) return;
-        const profile: Profile = { id: PROFILE_ID, username: name, createdAt: Date.now() };
+        const pinHash = pin ? await sha256(pin) : undefined;
+        const securityQuestions = await Promise.all(
+          questions.map(async (q) => ({
+            question: q.question.trim(),
+            answerHash: await sha256(q.answer.trim().toLowerCase()),
+          })),
+        );
+        const profile: Profile = {
+          id: PROFILE_ID,
+          username: name,
+          createdAt: Date.now(),
+          pinHash,
+          securityQuestions,
+        };
         const cats = get().categories.length === 0 ? seedCategories(PROFILE_ID) : get().categories;
         set({ profile, currentUserId: PROFILE_ID, categories: cats });
       },
@@ -151,6 +165,7 @@ export const useVault = create<VaultState>()(
       resetVault: async () => {
         const ids = get().files.map((f) => f.id);
         await Promise.all(ids.map((id) => deleteBlob(id).catch(() => {})));
+        await deleteDirHandle().catch(() => {});
         set({
           profile: null,
           currentUserId: null,
@@ -158,8 +173,25 @@ export const useVault = create<VaultState>()(
           notes: [],
           categories: [],
           lockPasswordHash: null,
+          storageConfig: null,
           unlockedIds: {},
         });
+      },
+
+      setStorageConfig: (type, pathLabel, hasDirHandle) => {
+        set({
+          storageConfig: {
+            type,
+            pathLabel,
+            hasDirHandle,
+            setupDate: Date.now(),
+          },
+        });
+      },
+
+      clearStorageConfig: async () => {
+        await deleteDirHandle().catch(() => {});
+        set({ storageConfig: null });
       },
 
       addCategory: (name, type) => {
