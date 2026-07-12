@@ -373,6 +373,7 @@ export const useVault = create<VaultState>()(
         categories: s.categories,
         theme: s.theme,
         lockPasswordHash: s.lockPasswordHash,
+        storageConfig: s.storageConfig,
       }),
     },
   ),
