@@ -66,13 +66,13 @@ export async function writeFileToVault(
     // @ts-expect-error - queryPermission not in default lib types
     const perm: PermissionState = await handle.queryPermission({ mode: "readwrite" });
     if (perm !== "granted") {
-      // @ts-expect-error
+      // @ts-expect-error - requestPermission not in default lib types
       const req: PermissionState = await handle.requestPermission({ mode: "readwrite" });
       if (req !== "granted") return { ok: false, error: "Permission to write denied" };
     }
     const sub = await handle.getDirectoryHandle(subfolder, { create: true });
     const fileHandle = await sub.getFileHandle(uniqueName(file.name), { create: true });
-    // @ts-expect-error - createWritable not in default types
+    // @ts-expect-error - createWritable not in default lib types
     const writable = await fileHandle.createWritable();
     await writable.write(file);
     await writable.close();
