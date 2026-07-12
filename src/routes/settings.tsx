@@ -13,6 +13,9 @@ import {
   Lock,
   FileText,
   StickyNote,
+  FolderCog,
+  FolderPlus,
+  FolderOpen,
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
