@@ -14,6 +14,19 @@ export interface Profile {
   id: string;
   username: string;
   createdAt: number;
+  pinHash?: string;
+  securityQuestions?: { question: string; answerHash: string }[];
+}
+
+export type StorageType = "default" | "custom";
+
+export interface StorageConfig {
+  type: StorageType;
+  /** Human-readable label — e.g. "SecureVault (on this device)" or the folder name */
+  pathLabel: string;
+  /** Whether a File System Access API directory handle is stored in IDB under key "dirHandle" */
+  hasDirHandle: boolean;
+  setupDate: number;
 }
 
 export interface FileMeta {
