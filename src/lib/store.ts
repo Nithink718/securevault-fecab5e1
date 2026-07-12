@@ -46,12 +46,24 @@ interface VaultState {
   categories: Category[];
   theme: "light" | "dark";
   lockPasswordHash: string | null;
+  storageConfig: StorageConfig | null;
   /** Session-only ids that have been unlocked. NOT persisted. */
   unlockedIds: Record<string, true>;
 
-  createProfile: (username: string) => void;
+  createProfile: (data: {
+    username: string;
+    pin: string;
+    questions: { question: string; answer: string }[];
+  }) => Promise<void>;
   updateUsername: (username: string) => void;
   resetVault: () => Promise<void>;
+
+  setStorageConfig: (
+    type: StorageType,
+    pathLabel: string,
+    hasDirHandle: boolean,
+  ) => void;
+  clearStorageConfig: () => Promise<void>;
 
   addCategory: (name: string, type: "file" | "note") => void;
   renameCategory: (id: string, name: string) => void;
