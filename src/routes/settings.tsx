@@ -55,6 +55,9 @@ function SettingsPage() {
   const importData = useVault((s) => s.importData);
   const resetVault = useVault((s) => s.resetVault);
   const updateUsername = useVault((s) => s.updateUsername);
+  const storageConfig = useVault((s) => s.storageConfig);
+  const setStorageConfig = useVault((s) => s.setStorageConfig);
+  const clearStorageConfig = useVault((s) => s.clearStorageConfig);
 
   const hasLockPassword = useVault((s) => s.hasLockPassword);
   const setLockPassword = useVault((s) => s.setLockPassword);
