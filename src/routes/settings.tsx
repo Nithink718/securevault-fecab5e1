@@ -131,6 +131,24 @@ function SettingsPage() {
     toast.success("Lock password removed. Items have been unlocked.");
   }
 
+  async function handleUseDefaultStorage() {
+    await clearStorageConfig();
+    setStorageConfig("default", "SecureVault (on this device)", false);
+    toast.success("Storage set to SecureVault (device)");
+  }
+
+  async function handlePickCustomStorage() {
+    if (!isFsaSupported()) {
+      return toast.error("Your browser doesn't support folder picking.");
+    }
+    try {
+      const handle = await pickCustomFolder();
+      setStorageConfig("custom", handle.name, true);
+      toast.success(`Now using "${handle.name}" for storage. New uploads will be mirrored there.`);
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") toast.error((e as Error).message);
+    }
+
   return (
     <AppShell>
       <PageHeader title="Settings" subtitle="Manage your profile, appearance, and vault data." />
