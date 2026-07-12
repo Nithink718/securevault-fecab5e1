@@ -221,6 +221,67 @@ function SettingsPage() {
           </div>
         </Section>
 
+        <Section title="Storage location" description="Where SecureVault manages your files.">
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-secondary/40 p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  {storageConfig?.type === "custom" ? (
+                    <FolderOpen className="size-4" />
+                  ) : (
+                    <FolderPlus className="size-4" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Current location
+                  </p>
+                  <p className="mt-0.5 truncate text-sm font-semibold">
+                    {storageConfig?.pathLabel ?? "Not configured"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {storageConfig
+                      ? `${storageConfig.type === "custom" ? "Custom folder" : "SecureVault default"} • set ${new Date(storageConfig.setupDate).toLocaleDateString()}`
+                      : "Choose a location below."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-2 text-xs">
+              <div className="flex items-center justify-between rounded-md bg-secondary/40 px-3 py-2">
+                <span className="text-muted-foreground">Files</span>
+                <span className="font-medium">{formatSize(filesSize)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-md bg-secondary/40 px-3 py-2">
+                <span className="text-muted-foreground">Notes</span>
+                <span className="font-medium">{formatSize(notesSize)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-md bg-secondary/40 px-3 py-2">
+                <span className="text-muted-foreground">Total used</span>
+                <span className="font-semibold">{formatSize(totalSize)}</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <Button variant="outline" onClick={handleUseDefaultStorage}>
+                <FolderPlus className="size-4" /> Use SecureVault default
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handlePickCustomStorage}
+                disabled={!isFsaSupported()}
+              >
+                <FolderCog className="size-4" /> Choose custom folder…
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Changing the location applies to new uploads. Existing files remain in SecureVault
+                storage until you export them.
+              </p>
+            </div>
+          </div>
+        </Section>
+
+
+
         <Section
           title="Lock password"
           description="Used to lock and unlock individual files and notes."
