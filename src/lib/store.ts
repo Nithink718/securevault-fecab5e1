@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Category, FileMeta, Note, Profile } from "./types";
-import { deleteBlob } from "./idb";
+import type { Category, FileMeta, Note, Profile, StorageConfig, StorageType } from "./types";
+import { deleteBlob, deleteDirHandle } from "./idb";
 
 const DEFAULT_FILE_CATS = [
   "Documents",
