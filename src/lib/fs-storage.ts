@@ -63,16 +63,17 @@ export async function writeFileToVault(
   try {
     const handle = await getDirHandle();
     if (!handle) return { ok: false, error: "No custom folder is configured" };
-    // @ts-expect-error - queryPermission not in default lib types
-    const perm: PermissionState = await handle.queryPermission({ mode: "readwrite" });
+    const h = handle as unknown as {
+      queryPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+      requestPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+    };
+    const perm = await h.queryPermission({ mode: "readwrite" });
     if (perm !== "granted") {
-      // @ts-expect-error - requestPermission not in default lib types
-      const req: PermissionState = await handle.requestPermission({ mode: "readwrite" });
+      const req = await h.requestPermission({ mode: "readwrite" });
       if (req !== "granted") return { ok: false, error: "Permission to write denied" };
     }
     const sub = await handle.getDirectoryHandle(subfolder, { create: true });
     const fileHandle = await sub.getFileHandle(uniqueName(file.name), { create: true });
-    // @ts-expect-error - createWritable not in default lib types
     const writable = await fileHandle.createWritable();
     await writable.write(file);
     await writable.close();
