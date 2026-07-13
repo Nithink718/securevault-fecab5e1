@@ -20,8 +20,17 @@ import {
 import { useVault } from "@/lib/store";
 import { putBlob } from "@/lib/idb";
 import { defaultCategoryForKind, detectKind, formatSize } from "@/lib/file-utils";
-import { categoryToSubfolder, writeFileToVault } from "@/lib/fs-storage";
+import {
+  categoryToSubfolder,
+  writeFileToVault,
+  isFilePickerSupported,
+  isInCrossOriginIframe,
+  pickFilesWithHandles,
+  removeOriginal,
+} from "@/lib/fs-storage";
 import { toast } from "sonner";
+
+type PickedFile = { file: File; handle?: FileSystemFileHandle };
 
 type Mode = "copy" | "move";
 
