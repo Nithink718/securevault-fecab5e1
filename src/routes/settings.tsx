@@ -37,7 +37,7 @@ import { useCurrentUser, useVault } from "@/lib/store";
 import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize } from "@/lib/file-utils";
 import { toast } from "sonner";
-import { isFsaSupported, pickCustomFolder } from "@/lib/fs-storage";
+import { isFsaSupported, isInCrossOriginIframe, pickCustomFolder } from "@/lib/fs-storage";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — SecureVault" }] }),
