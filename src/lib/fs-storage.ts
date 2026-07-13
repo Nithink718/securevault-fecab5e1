@@ -20,16 +20,56 @@ export function isFsaSupported(): boolean {
   return typeof window !== "undefined" && "showDirectoryPicker" in window;
 }
 
+export function isInCrossOriginIframe(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
 export async function pickCustomFolder(): Promise<FileSystemDirectoryHandle> {
-  if (!isFsaSupported()) throw new Error("Folder picker not supported in this browser");
-  // @ts-expect-error - showDirectoryPicker is not in stock lib.dom types
-  const handle: FileSystemDirectoryHandle = await window.showDirectoryPicker({
-    id: "securevault-root",
-    mode: "readwrite",
-  });
-  await ensureSubfolders(handle);
-  await putDirHandle(handle);
-  return handle;
+  if (!isFsaSupported()) {
+    throw new Error("Your browser doesn't support choosing a folder. Try Chrome, Edge, or Opera on desktop.");
+  }
+  if (isInCrossOriginIframe()) {
+    const err = new Error(
+      "Folder picking is blocked inside this preview frame. Open SecureVault in its own browser tab and try again.",
+    );
+    err.name = "IframeBlockedError";
+    throw err;
+  }
+  try {
+    // @ts-expect-error - showDirectoryPicker is not in stock lib.dom types
+    const handle: FileSystemDirectoryHandle = await window.showDirectoryPicker({
+      id: "securevault-root",
+      mode: "readwrite",
+      startIn: "documents",
+    });
+    // Ensure we actually have read/write permission before persisting
+    const h = handle as unknown as {
+      queryPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+      requestPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+    };
+    let perm = await h.queryPermission({ mode: "readwrite" });
+    if (perm !== "granted") perm = await h.requestPermission({ mode: "readwrite" });
+    if (perm !== "granted") throw new Error("Permission to write to that folder was denied.");
+    await ensureSubfolders(handle);
+    await putDirHandle(handle);
+    return handle;
+  } catch (e) {
+    const err = e as DOMException & { name: string; message: string };
+    if (err.name === "AbortError") throw err; // user cancelled
+    if (err.name === "SecurityError") {
+      const wrap = new Error(
+        "Your browser blocked the folder picker (usually because the app is inside an embedded frame). Open SecureVault in its own tab and try again.",
+      );
+      wrap.name = "IframeBlockedError";
+      throw wrap;
+    }
+    throw err;
+  }
 }
 
 export async function ensureSubfolders(root: FileSystemDirectoryHandle) {
