@@ -311,6 +311,7 @@ function StorageStep({ onDone }: { onDone: () => void }) {
   const setStorageConfig = useVault((s) => s.setStorageConfig);
   const [busy, setBusy] = useState<"default" | "custom" | null>(null);
   const fsa = isFsaSupported();
+  const embedded = isInCrossOriginIframe();
 
   async function chooseDefault() {
     setBusy("default");
@@ -322,7 +323,11 @@ function StorageStep({ onDone }: { onDone: () => void }) {
 
   async function chooseCustom() {
     if (!fsa) {
-      toast.error("Your browser doesn't support folder picking. Use the default option.");
+      toast.error("Your browser doesn't support folder picking. Use the recommended option.");
+      return;
+    }
+    if (embedded) {
+      toast.error("Open SecureVault in its own browser tab to pick a folder.");
       return;
     }
     try {
@@ -332,11 +337,19 @@ function StorageStep({ onDone }: { onDone: () => void }) {
       toast.success(`Using "${handle.name}" as SecureVault storage`);
       onDone();
     } catch (e) {
-      if ((e as Error).name !== "AbortError") toast.error((e as Error).message);
+      const err = e as Error;
+      if (err.name === "AbortError") return; // silent on cancel
+      toast.error(err.message || "Couldn't select that folder");
     } finally {
       setBusy(null);
     }
   }
+
+  function openInNewTab() {
+    window.open(window.location.href, "_blank", "noopener,noreferrer");
+  }
+
+  const customDisabled = !fsa || embedded;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -360,14 +373,27 @@ function StorageStep({ onDone }: { onDone: () => void }) {
           icon={<FolderOpen className="size-5" />}
           title="Choose Custom Folder"
           description={
-            fsa
-              ? "Select an existing folder anywhere on your device."
-              : "Not supported in this browser — use the recommended option above."
+            !fsa
+              ? "Not supported in this browser — use the recommended option above."
+              : embedded
+                ? "Folder picking is blocked inside embedded previews. Open SecureVault in its own tab to enable this."
+                : "Select an existing folder anywhere on your device."
           }
           loading={busy === "custom"}
-          disabled={!fsa}
+          disabled={customDisabled}
           onClick={chooseCustom}
         />
+
+        {embedded && fsa && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={openInNewTab}
+          >
+            Open SecureVault in a new tab <ArrowRight className="size-4" />
+          </Button>
+        )}
       </div>
 
       <div className="mt-6 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
