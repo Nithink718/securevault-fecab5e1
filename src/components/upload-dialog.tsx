@@ -20,28 +20,18 @@ import {
 import { useVault } from "@/lib/store";
 import { putBlob } from "@/lib/idb";
 import { defaultCategoryForKind, detectKind, formatSize } from "@/lib/file-utils";
-import {
-  categoryToSubfolder,
-  writeFileToVault,
-  isFilePickerSupported,
-  isInCrossOriginIframe,
-  pickFilesWithHandles,
-  removeOriginal,
-} from "@/lib/fs-storage";
+import { categoryToSubfolder, writeFileToVault } from "@/lib/fs-storage";
 import { toast } from "sonner";
-
-type PickedFile = { file: File; handle?: FileSystemFileHandle };
 
 type Mode = "copy" | "move";
 
 export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"pick" | "mode">("pick");
   const [busy, setBusy] = useState(false);
-  const canDeleteOriginals = isFilePickerSupported() && !isInCrossOriginIframe();
 
   const currentUserId = useVault((s) => s.currentUserId);
   const allCategories = useVault((s) => s.categories);
@@ -66,11 +56,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     setBusy(true);
     let uploaded = 0;
     let fsErrors = 0;
-    let removed = 0;
-    let removeFailed = 0;
-    let noHandleCount = 0;
-    for (const picked of files) {
-      const file = picked.file;
+    for (const file of files) {
       const kind = detectKind(file.type, file.name);
       const cat = category || defaultCategoryForKind(kind);
       const id = addFile({
@@ -80,10 +66,8 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         kind,
         category: cat,
       });
-      let storedOk = false;
       try {
         await putBlob(id, file);
-        storedOk = true;
         // Also mirror to a custom folder if configured
         if (storageConfig?.type === "custom" && storageConfig.hasDirHandle) {
           const sub = categoryToSubfolder(cat, kind);
@@ -93,16 +77,6 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         uploaded++;
       } catch {
         toast.error(`Failed to store ${file.name}`);
-      }
-      // On "move": delete the original from the user's disk if we have a handle
-      if (mode === "move" && storedOk) {
-        if (picked.handle) {
-          const ok = await removeOriginal(picked.handle);
-          if (ok) removed++;
-          else removeFailed++;
-        } else {
-          noHandleCount++;
-        }
       }
     }
     setBusy(false);
@@ -114,37 +88,11 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       );
     }
     if (mode === "move") {
-      if (removed > 0) {
-        toast.success(`Removed ${removed} original file${removed === 1 ? "" : "s"} from disk`);
-      }
-      if (removeFailed > 0) {
-        toast.warning(
-          `Couldn't delete ${removeFailed} original file${removeFailed === 1 ? "" : "s"}. Remove them manually if needed.`,
-        );
-      }
-      if (noHandleCount > 0) {
-        toast.info(
-          `${noHandleCount} file${noHandleCount === 1 ? " was" : "s were"} added via drag-drop or basic browser upload, so the original${noHandleCount === 1 ? "" : "s"} can't be deleted automatically. Use "Choose files" for true move.`,
-        );
-      }
+      toast.info(
+        "Browsers can't delete original files. Please remove them from their source location manually.",
+      );
     }
     onOpenChange(false);
-  }
-
-  async function openNativePicker() {
-    if (!canDeleteOriginals) {
-      inputRef.current?.click();
-      return;
-    }
-    try {
-      const picked = await pickFilesWithHandles();
-      if (picked.length > 0) setFiles(picked);
-    } catch (e) {
-      const err = e as Error;
-      if (err.name === "AbortError") return;
-      // Fallback to regular input
-      inputRef.current?.click();
-    }
   }
 
   return (
@@ -161,7 +109,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             </DialogHeader>
 
             <div
-              onClick={openNativePicker}
+              onClick={() => inputRef.current?.click()}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -170,7 +118,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
-                setFiles(Array.from(e.dataTransfer.files).map((f) => ({ file: f })));
+                setFiles(Array.from(e.dataTransfer.files));
               }}
               className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
                 dragging ? "border-brand bg-brand/5" : "border-border hover:bg-secondary/40"
@@ -183,19 +131,12 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <p className="mt-1 text-xs text-muted-foreground">
                 PDF, Word, Excel, Images, Video, Audio, ZIP, TXT
               </p>
-              {!canDeleteOriginals && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Tip: for true "Move" (auto-delete originals), open SecureVault in its own Chrome/Edge tab.
-                </p>
-              )}
               <input
                 ref={inputRef}
                 type="file"
                 multiple
                 hidden
-                onChange={(e) =>
-                  setFiles(Array.from(e.target.files ?? []).map((f) => ({ file: f })))
-                }
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
               />
             </div>
 
@@ -203,9 +144,9 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <div className="max-h-40 space-y-2 overflow-auto rounded-lg border border-border p-2">
                 {files.map((f, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="truncate pr-2">{f.file.name}</span>
+                    <span className="truncate pr-2">{f.name}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatSize(f.file.size)}
+                      {formatSize(f.size)}
                     </span>
                   </div>
                 ))}
