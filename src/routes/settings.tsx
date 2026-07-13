@@ -139,14 +139,21 @@ function SettingsPage() {
 
   async function handlePickCustomStorage() {
     if (!isFsaSupported()) {
-      return toast.error("Your browser doesn't support folder picking.");
+      return toast.error("Your browser doesn't support folder picking. Try Chrome, Edge, or Opera on desktop.");
+    }
+    if (isInCrossOriginIframe()) {
+      toast.error("Open SecureVault in its own browser tab to choose a custom folder.");
+      window.open(window.location.href, "_blank", "noopener,noreferrer");
+      return;
     }
     try {
       const handle = await pickCustomFolder();
       setStorageConfig("custom", handle.name, true);
       toast.success(`Now using "${handle.name}" for storage. New uploads will be mirrored there.`);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") toast.error((e as Error).message);
+      const err = e as Error;
+      if (err.name === "AbortError") return;
+      toast.error(err.message || "Couldn't select that folder");
     }
   }
 
