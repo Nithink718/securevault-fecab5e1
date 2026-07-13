@@ -161,7 +161,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             </DialogHeader>
 
             <div
-              onClick={() => inputRef.current?.click()}
+              onClick={openNativePicker}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -170,7 +170,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
-                setFiles(Array.from(e.dataTransfer.files));
+                setFiles(Array.from(e.dataTransfer.files).map((f) => ({ file: f })));
               }}
               className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
                 dragging ? "border-brand bg-brand/5" : "border-border hover:bg-secondary/40"
@@ -183,12 +183,19 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <p className="mt-1 text-xs text-muted-foreground">
                 PDF, Word, Excel, Images, Video, Audio, ZIP, TXT
               </p>
+              {!canDeleteOriginals && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Tip: for true "Move" (auto-delete originals), open SecureVault in its own Chrome/Edge tab.
+                </p>
+              )}
               <input
                 ref={inputRef}
                 type="file"
                 multiple
                 hidden
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                onChange={(e) =>
+                  setFiles(Array.from(e.target.files ?? []).map((f) => ({ file: f })))
+                }
               />
             </div>
 
@@ -196,9 +203,9 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <div className="max-h-40 space-y-2 overflow-auto rounded-lg border border-border p-2">
                 {files.map((f, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="truncate pr-2">{f.name}</span>
+                    <span className="truncate pr-2">{f.file.name}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatSize(f.size)}
+                      {formatSize(f.file.size)}
                     </span>
                   </div>
                 ))}
