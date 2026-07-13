@@ -20,6 +20,59 @@ export function isFsaSupported(): boolean {
   return typeof window !== "undefined" && "showDirectoryPicker" in window;
 }
 
+export function isFilePickerSupported(): boolean {
+  return typeof window !== "undefined" && "showOpenFilePicker" in window;
+}
+
+/**
+ * Pick files via the File System Access API so we get back handles that can be
+ * used to delete the originals (needed for a real "move" operation).
+ */
+export async function pickFilesWithHandles(): Promise<
+  Array<{ file: File; handle: FileSystemFileHandle }>
+> {
+  if (!isFilePickerSupported()) throw new Error("File picker not supported");
+  if (isInCrossOriginIframe()) {
+    const err = new Error("File picker is blocked inside this preview frame.");
+    err.name = "IframeBlockedError";
+    throw err;
+  }
+  // @ts-expect-error - showOpenFilePicker is not in stock lib.dom types
+  const handles: FileSystemFileHandle[] = await window.showOpenFilePicker({
+    multiple: true,
+    excludeAcceptAllOption: false,
+  });
+  const out: Array<{ file: File; handle: FileSystemFileHandle }> = [];
+  for (const h of handles) {
+    const file = await h.getFile();
+    out.push({ file, handle: h });
+  }
+  return out;
+}
+
+/** Try to delete an original file via its handle. Returns true on success. */
+export async function removeOriginal(handle: FileSystemFileHandle): Promise<boolean> {
+  try {
+    const h = handle as unknown as {
+      queryPermission?: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+      requestPermission?: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+      remove?: () => Promise<void>;
+    };
+    if (h.queryPermission) {
+      let perm = await h.queryPermission({ mode: "readwrite" });
+      if (perm !== "granted" && h.requestPermission) {
+        perm = await h.requestPermission({ mode: "readwrite" });
+      }
+      if (perm !== "granted") return false;
+    }
+    if (typeof h.remove !== "function") return false;
+    await h.remove();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isInCrossOriginIframe(): boolean {
   if (typeof window === "undefined") return false;
   try {
