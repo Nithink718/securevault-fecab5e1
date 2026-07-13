@@ -36,11 +36,12 @@ type Mode = "copy" | "move";
 
 export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<PickedFile[]>([]);
   const [category, setCategory] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"pick" | "mode">("pick");
   const [busy, setBusy] = useState(false);
+  const canDeleteOriginals = isFilePickerSupported() && !isInCrossOriginIframe();
 
   const currentUserId = useVault((s) => s.currentUserId);
   const allCategories = useVault((s) => s.categories);
