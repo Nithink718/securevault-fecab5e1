@@ -66,7 +66,11 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     setBusy(true);
     let uploaded = 0;
     let fsErrors = 0;
-    for (const file of files) {
+    let removed = 0;
+    let removeFailed = 0;
+    let noHandleCount = 0;
+    for (const picked of files) {
+      const file = picked.file;
       const kind = detectKind(file.type, file.name);
       const cat = category || defaultCategoryForKind(kind);
       const id = addFile({
@@ -76,8 +80,10 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         kind,
         category: cat,
       });
+      let storedOk = false;
       try {
         await putBlob(id, file);
+        storedOk = true;
         // Also mirror to a custom folder if configured
         if (storageConfig?.type === "custom" && storageConfig.hasDirHandle) {
           const sub = categoryToSubfolder(cat, kind);
@@ -87,6 +93,16 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         uploaded++;
       } catch {
         toast.error(`Failed to store ${file.name}`);
+      }
+      // On "move": delete the original from the user's disk if we have a handle
+      if (mode === "move" && storedOk) {
+        if (picked.handle) {
+          const ok = await removeOriginal(picked.handle);
+          if (ok) removed++;
+          else removeFailed++;
+        } else {
+          noHandleCount++;
+        }
       }
     }
     setBusy(false);
@@ -98,11 +114,37 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       );
     }
     if (mode === "move") {
-      toast.info(
-        "Browsers can't delete original files. Please remove them from their source location manually.",
-      );
+      if (removed > 0) {
+        toast.success(`Removed ${removed} original file${removed === 1 ? "" : "s"} from disk`);
+      }
+      if (removeFailed > 0) {
+        toast.warning(
+          `Couldn't delete ${removeFailed} original file${removeFailed === 1 ? "" : "s"}. Remove them manually if needed.`,
+        );
+      }
+      if (noHandleCount > 0) {
+        toast.info(
+          `${noHandleCount} file${noHandleCount === 1 ? " was" : "s were"} added via drag-drop or basic browser upload, so the original${noHandleCount === 1 ? "" : "s"} can't be deleted automatically. Use "Choose files" for true move.`,
+        );
+      }
     }
     onOpenChange(false);
+  }
+
+  async function openNativePicker() {
+    if (!canDeleteOriginals) {
+      inputRef.current?.click();
+      return;
+    }
+    try {
+      const picked = await pickFilesWithHandles();
+      if (picked.length > 0) setFiles(picked);
+    } catch (e) {
+      const err = e as Error;
+      if (err.name === "AbortError") return;
+      // Fallback to regular input
+      inputRef.current?.click();
+    }
   }
 
   return (
