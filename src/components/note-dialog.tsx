@@ -20,6 +20,8 @@ import {
 
 import { useVault } from "@/lib/store";
 import type { Note } from "@/lib/types";
+import { writeNoteToVault } from "@/lib/fs-storage";
+import { toast } from "sonner";
 
 const COLORS = ["#2563EB", "#7C3AED", "#10B981", "#F59E0B", "#EF4444", "#06B6D4", "#EC4899", "#64748B"];
 
@@ -36,6 +38,7 @@ export function NoteDialog({
   const allCategories = useVault((s) => s.categories);
   const addNote = useVault((s) => s.addNote);
   const updateNote = useVault((s) => s.updateNote);
+  const storageConfig = useVault((s) => s.storageConfig);
   const categories = useMemo(
     () => allCategories.filter((c) => c.userId === currentUserId && c.type === "note"),
     [allCategories, currentUserId],
@@ -55,10 +58,38 @@ export function NoteDialog({
     }
   }, [open, note, categories]);
 
-  function save() {
+  async function save() {
     if (!title.trim() && !content.trim()) return;
-    if (note) updateNote(note.id, { title, content, category, color });
-    else addNote({ title, content, category, color });
+    const useCustom =
+      storageConfig?.type === "custom" && storageConfig.hasDirHandle;
+    if (note) {
+      updateNote(note.id, { title, content, category, color });
+      if (useCustom) {
+        const res = await writeNoteToVault(
+          { id: note.id, title, content, category, updatedDate: Date.now() },
+          note.storageFileName,
+        );
+        if (res.ok) {
+          if (res.fileName !== note.storageFileName)
+            updateNote(note.id, { storageFileName: res.fileName });
+        } else {
+          toast.error(`Saved locally, but couldn't write to your folder: ${res.error}`);
+        }
+      }
+    } else {
+      const id = addNote({ title, content, category, color });
+      if (useCustom) {
+        const res = await writeNoteToVault({
+          id,
+          title,
+          content,
+          category,
+          updatedDate: Date.now(),
+        });
+        if (res.ok) updateNote(id, { storageFileName: res.fileName });
+        else toast.error(`Saved locally, but couldn't write to your folder: ${res.error}`);
+      }
+    }
     onOpenChange(false);
   }
 

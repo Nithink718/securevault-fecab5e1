@@ -187,3 +187,87 @@ function uniqueName(name: string): string {
 export async function clearCustomFolder() {
   await deleteDirHandle();
 }
+
+function sanitizeFileName(name: string): string {
+  const s = name.replace(/[\\/:*?"<>|\n\r\t]/g, "_").trim();
+  return (s || "note").slice(0, 80);
+}
+
+export function noteFileName(note: { id: string; title: string }): string {
+  return `${sanitizeFileName(note.title || "Untitled")}-${note.id}.txt`;
+}
+
+async function ensureWritePermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
+  const h = handle as unknown as {
+    queryPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+    requestPermission: (o: { mode: "readwrite" }) => Promise<PermissionState>;
+  };
+  let perm = await h.queryPermission({ mode: "readwrite" });
+  if (perm !== "granted") perm = await h.requestPermission({ mode: "readwrite" });
+  return perm === "granted";
+}
+
+/**
+ * Write a note as a .txt file into the "Notes" subfolder of the custom vault.
+ * If `previousFileName` is provided (an edit), it is removed first so the
+ * on-disk copy stays in sync with the current title.
+ */
+export async function writeNoteToVault(
+  note: { id: string; title: string; content: string; category?: string; updatedDate?: number },
+  previousFileName?: string,
+): Promise<{ ok: true; fileName: string } | { ok: false; error: string }> {
+  try {
+    const handle = await getDirHandle();
+    if (!handle) return { ok: false, error: "No custom folder is configured" };
+    if (!(await ensureWritePermission(handle)))
+      return { ok: false, error: "Permission to write denied" };
+
+    const sub = await handle.getDirectoryHandle("Notes", { create: true });
+
+    if (previousFileName && previousFileName !== noteFileName(note)) {
+      try {
+        await sub.removeEntry(previousFileName);
+      } catch {
+        /* ignore missing */
+      }
+    }
+
+    const fileName = noteFileName(note);
+    const fileHandle = await sub.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    const header = [
+      `Title: ${note.title || "Untitled"}`,
+      note.category ? `Category: ${note.category}` : null,
+      `Updated: ${new Date(note.updatedDate ?? Date.now()).toISOString()}`,
+      "",
+      "",
+    ]
+      .filter((l): l is string => l !== null)
+      .join("\n");
+    await writable.write(new Blob([header + (note.content ?? "")], { type: "text/plain" }));
+    await writable.close();
+    return { ok: true, fileName };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+export async function deleteNoteFromVault(
+  fileName: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const handle = await getDirHandle();
+    if (!handle) return { ok: false, error: "No custom folder is configured" };
+    if (!(await ensureWritePermission(handle)))
+      return { ok: false, error: "Permission to write denied" };
+    const sub = await handle.getDirectoryHandle("Notes", { create: true });
+    try {
+      await sub.removeEntry(fileName);
+    } catch {
+      /* file may already be gone */
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
