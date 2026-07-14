@@ -33,6 +33,7 @@ import { useVault } from "@/lib/store";
 import { estimateNotesSize } from "@/lib/file-utils";
 import { formatSize, timeAgo } from "@/lib/file-utils";
 import { NoteDialog } from "@/components/note-dialog";
+import { deleteNoteFromVault } from "@/lib/fs-storage";
 import { LockDialog } from "@/components/lock-dialog";
 import { toast } from "sonner";
 import type { Note } from "@/lib/types";
