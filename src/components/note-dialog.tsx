@@ -58,10 +58,38 @@ export function NoteDialog({
     }
   }, [open, note, categories]);
 
-  function save() {
+  async function save() {
     if (!title.trim() && !content.trim()) return;
-    if (note) updateNote(note.id, { title, content, category, color });
-    else addNote({ title, content, category, color });
+    const useCustom =
+      storageConfig?.type === "custom" && storageConfig.hasDirHandle;
+    if (note) {
+      updateNote(note.id, { title, content, category, color });
+      if (useCustom) {
+        const res = await writeNoteToVault(
+          { id: note.id, title, content, category, updatedDate: Date.now() },
+          note.storageFileName,
+        );
+        if (res.ok) {
+          if (res.fileName !== note.storageFileName)
+            updateNote(note.id, { storageFileName: res.fileName });
+        } else {
+          toast.error(`Saved locally, but couldn't write to your folder: ${res.error}`);
+        }
+      }
+    } else {
+      const id = addNote({ title, content, category, color });
+      if (useCustom) {
+        const res = await writeNoteToVault({
+          id,
+          title,
+          content,
+          category,
+          updatedDate: Date.now(),
+        });
+        if (res.ok) updateNote(id, { storageFileName: res.fileName });
+        else toast.error(`Saved locally, but couldn't write to your folder: ${res.error}`);
+      }
+    }
     onOpenChange(false);
   }
 
