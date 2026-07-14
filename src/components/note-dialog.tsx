@@ -38,6 +38,7 @@ export function NoteDialog({
   const allCategories = useVault((s) => s.categories);
   const addNote = useVault((s) => s.addNote);
   const updateNote = useVault((s) => s.updateNote);
+  const storageConfig = useVault((s) => s.storageConfig);
   const categories = useMemo(
     () => allCategories.filter((c) => c.userId === currentUserId && c.type === "note"),
     [allCategories, currentUserId],
