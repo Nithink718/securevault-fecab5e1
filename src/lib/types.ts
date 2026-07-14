@@ -60,6 +60,8 @@ export interface Note {
   createdDate: number;
   updatedDate: number;
   lastOpened?: number;
+  /** Filename of the mirrored .txt copy in the user's custom Notes folder, if any. */
+  storageFileName?: string;
 }
 
 export interface Category {
