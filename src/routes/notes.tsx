@@ -51,6 +51,7 @@ function NotesPage() {
   const deleteNote = useVault((s) => s.deleteNote);
   const isUnlocked = useVault((s) => s.isUnlocked);
   const markUnlocked = useVault((s) => s.markUnlocked);
+  const storageConfig = useVault((s) => s.storageConfig);
 
   const notes = useMemo(
     () => allNotes.filter((n) => n.userId === currentUserId),
