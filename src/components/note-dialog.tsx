@@ -20,6 +20,8 @@ import {
 
 import { useVault } from "@/lib/store";
 import type { Note } from "@/lib/types";
+import { writeNoteToVault } from "@/lib/fs-storage";
+import { toast } from "sonner";
 
 const COLORS = ["#2563EB", "#7C3AED", "#10B981", "#F59E0B", "#EF4444", "#06B6D4", "#EC4899", "#64748B"];
 
