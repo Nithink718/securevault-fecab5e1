@@ -235,10 +235,19 @@ function NotesPage() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => {
-                        if (confirm("Delete this note?")) {
-                          deleteNote(n.id);
-                          toast.success("Note deleted");
+                      onClick={async () => {
+                        if (!confirm("Delete this note?")) return;
+                        const fileName = n.storageFileName;
+                        deleteNote(n.id);
+                        toast.success("Note deleted");
+                        if (
+                          fileName &&
+                          storageConfig?.type === "custom" &&
+                          storageConfig.hasDirHandle
+                        ) {
+                          const res = await deleteNoteFromVault(fileName);
+                          if (!res.ok)
+                            toast.error(`Couldn't remove file from folder: ${res.error}`);
                         }
                       }}
                       className="text-destructive focus:text-destructive"
