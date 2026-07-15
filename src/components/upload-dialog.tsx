@@ -89,6 +89,7 @@ export function UploadDialog({
         mime: file.type || "application/octet-stream",
         kind,
         category: cat,
+        folderId,
       });
       let storedOk = false;
       try {
@@ -166,7 +167,7 @@ export function UploadDialog({
               <DialogTitle>Upload to vault</DialogTitle>
               <DialogDescription>
                 Files are saved to your device only
-                {storageConfig ? ` — ${storageConfig.pathLabel}` : ""}.
+                {folderLabel ? ` — into "${folderLabel}"` : storageConfig ? ` — ${storageConfig.pathLabel}` : ""}.
               </DialogDescription>
             </DialogHeader>
 
