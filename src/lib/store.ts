@@ -75,11 +75,17 @@ interface VaultState {
       FileMeta,
       "id" | "userId" | "uploadDate" | "favorite" | "hidden" | "locked" | "pinned"
     > &
-      Partial<Pick<FileMeta, "favorite" | "hidden" | "locked" | "pinned">>,
+      Partial<Pick<FileMeta, "favorite" | "hidden" | "locked" | "pinned" | "folderId">>,
   ) => string;
   updateFile: (id: string, patch: Partial<FileMeta>) => void;
   deleteFile: (id: string) => Promise<void>;
   touchFile: (id: string) => void;
+
+  // folders
+  addFolder: (name: string, parentId: string | null) => { ok: true; id: string } | { ok: false; error: string };
+  updateFolder: (id: string, patch: Partial<Folder>) => void;
+  moveFolder: (id: string, newParentId: string | null) => { ok: true } | { ok: false; error: string };
+  deleteFolder: (id: string) => Promise<void>;
 
   addNote: (n: Partial<Note>) => string;
   updateNote: (id: string, patch: Partial<Note>) => void;
@@ -127,6 +133,7 @@ export const useVault = create<VaultState>()(
       profile: null,
       currentUserId: null,
       files: [],
+      folders: [],
       notes: [],
       categories: [],
       theme: "light",
@@ -171,6 +178,7 @@ export const useVault = create<VaultState>()(
           profile: null,
           currentUserId: null,
           files: [],
+          folders: [],
           notes: [],
           categories: [],
           lockPasswordHash: null,
