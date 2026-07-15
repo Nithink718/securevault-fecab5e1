@@ -44,6 +44,22 @@ export interface FileMeta {
   uploadDate: number;
   modifiedDate?: number;
   lastOpened?: number;
+  /** null / undefined = root of the Files vault */
+  folderId?: string | null;
+}
+
+export interface Folder {
+  id: string;
+  userId: string;
+  name: string;
+  /** null = root */
+  parentId: string | null;
+  favorite: boolean;
+  hidden: boolean;
+  locked: boolean;
+  pinned: boolean;
+  createdDate: number;
+  modifiedDate: number;
 }
 
 export interface Note {
