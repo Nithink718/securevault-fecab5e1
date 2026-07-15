@@ -235,6 +235,7 @@ export const useVault = create<VaultState>()(
           pinned: f.pinned ?? false,
           uploadDate: now,
           modifiedDate: now,
+          folderId: f.folderId ?? null,
         };
         set((s) => ({ files: [...s.files, meta] }));
         return id;
@@ -253,6 +254,88 @@ export const useVault = create<VaultState>()(
         set((s) => ({
           files: s.files.map((f) => (f.id === id ? { ...f, lastOpened: Date.now() } : f)),
         })),
+
+      addFolder: (name, parentId) => {
+        const userId = get().currentUserId ?? PROFILE_ID;
+        const trimmed = name.trim();
+        if (!trimmed) return { ok: false, error: "Folder name is required" };
+        const dup = get().folders.some(
+          (fo) =>
+            fo.userId === userId &&
+            (fo.parentId ?? null) === (parentId ?? null) &&
+            fo.name.toLowerCase() === trimmed.toLowerCase(),
+        );
+        if (dup) return { ok: false, error: "A folder with that name already exists here" };
+        const now = Date.now();
+        const folder: Folder = {
+          id: uid(),
+          userId,
+          name: trimmed,
+          parentId: parentId ?? null,
+          favorite: false,
+          hidden: false,
+          locked: false,
+          pinned: false,
+          createdDate: now,
+          modifiedDate: now,
+        };
+        set((s) => ({ folders: [...s.folders, folder] }));
+        return { ok: true, id: folder.id };
+      },
+      updateFolder: (id, patch) =>
+        set((s) => ({
+          folders: s.folders.map((fo) =>
+            fo.id === id ? { ...fo, ...patch, modifiedDate: Date.now() } : fo,
+          ),
+        })),
+      moveFolder: (id, newParentId) => {
+        const state = get();
+        const folder = state.folders.find((fo) => fo.id === id);
+        if (!folder) return { ok: false, error: "Folder not found" };
+        if (id === newParentId) return { ok: false, error: "Can't move a folder into itself" };
+        // prevent moving into own descendant
+        let cur: string | null = newParentId;
+        while (cur) {
+          if (cur === id) return { ok: false, error: "Can't move a folder into its own subfolder" };
+          const parent: Folder | undefined = state.folders.find((fo) => fo.id === cur);
+          cur = parent?.parentId ?? null;
+        }
+        const dup = state.folders.some(
+          (fo) =>
+            fo.userId === folder.userId &&
+            fo.id !== id &&
+            (fo.parentId ?? null) === (newParentId ?? null) &&
+            fo.name.toLowerCase() === folder.name.toLowerCase(),
+        );
+        if (dup) return { ok: false, error: "A folder with that name already exists there" };
+        set((s) => ({
+          folders: s.folders.map((fo) =>
+            fo.id === id ? { ...fo, parentId: newParentId, modifiedDate: Date.now() } : fo,
+          ),
+        }));
+        return { ok: true };
+      },
+      deleteFolder: async (id) => {
+        // gather this folder + all descendants
+        const all = get().folders;
+        const descendants = new Set<string>([id]);
+        let added = true;
+        while (added) {
+          added = false;
+          for (const fo of all) {
+            if (fo.parentId && descendants.has(fo.parentId) && !descendants.has(fo.id)) {
+              descendants.add(fo.id);
+              added = true;
+            }
+          }
+        }
+        const doomedFiles = get().files.filter((f) => f.folderId && descendants.has(f.folderId));
+        await Promise.all(doomedFiles.map((f) => deleteBlob(f.id).catch(() => {})));
+        set((s) => ({
+          folders: s.folders.filter((fo) => !descendants.has(fo.id)),
+          files: s.files.filter((f) => !(f.folderId && descendants.has(f.folderId))),
+        }));
+      },
 
       addNote: (n) => {
         const userId = get().currentUserId ?? PROFILE_ID;
