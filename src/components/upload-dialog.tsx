@@ -34,7 +34,17 @@ type PickedFile = { file: File; handle?: FileSystemFileHandle };
 
 type Mode = "copy" | "move";
 
-export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function UploadDialog({
+  open,
+  onOpenChange,
+  folderId = null,
+  folderLabel,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  folderId?: string | null;
+  folderLabel?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [category, setCategory] = useState<string>("");
@@ -79,6 +89,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         mime: file.type || "application/octet-stream",
         kind,
         category: cat,
+        folderId,
       });
       let storedOk = false;
       try {
@@ -156,7 +167,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <DialogTitle>Upload to vault</DialogTitle>
               <DialogDescription>
                 Files are saved to your device only
-                {storageConfig ? ` — ${storageConfig.pathLabel}` : ""}.
+                {folderLabel ? ` — into "${folderLabel}"` : storageConfig ? ` — ${storageConfig.pathLabel}` : ""}.
               </DialogDescription>
             </DialogHeader>
 
