@@ -461,6 +461,7 @@ export const useVault = create<VaultState>()(
         profile: s.profile,
         currentUserId: s.currentUserId,
         files: s.files,
+        folders: s.folders,
         notes: s.notes,
         categories: s.categories,
         theme: s.theme,

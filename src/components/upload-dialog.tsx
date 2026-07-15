@@ -34,7 +34,17 @@ type PickedFile = { file: File; handle?: FileSystemFileHandle };
 
 type Mode = "copy" | "move";
 
-export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function UploadDialog({
+  open,
+  onOpenChange,
+  folderId = null,
+  folderLabel,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  folderId?: string | null;
+  folderLabel?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [category, setCategory] = useState<string>("");
