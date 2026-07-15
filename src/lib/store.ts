@@ -42,6 +42,7 @@ interface VaultState {
   profile: Profile | null;
   currentUserId: string | null;
   files: FileMeta[];
+  folders: Folder[];
   notes: Note[];
   categories: Category[];
   theme: "light" | "dark";
